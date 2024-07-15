@@ -2,6 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
+from .views import ListMessageView
 
 # router = DefaultRouter()
 # router.register(r'chatss', ChatViewSet)
@@ -12,7 +13,7 @@ from .views import *
 # ]
 
 urlpatterns=[
-    path('chats/',list_chat_view, name='chatview'),
+    path('get_message/',ListMessageView.as_view(), name='chatview'),
     path('create_chat/',ChatCreateView.as_view(), name='chat_view'),
     path('create_message/',MessageCreateView.as_view(), name='message_view')
     # path('messages/',MessageViewSet.as_view({

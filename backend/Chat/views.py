@@ -7,6 +7,7 @@ from users.models import Patient, Doctor
 from images.models import Image
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
+from rest_framework import generics
 
 class ChatCreateView(APIView):
     serializer_class = ChatSerializer
@@ -56,6 +57,15 @@ def list_chat_view(request):
         except (Patient.DoesNotExist, Image.DoesNotExist, Chat.DoesNotExist) as e:
             return Response({"message": "Patient, Image, or Chat not found"}, status=status.HTTP_404_NOT_FOUND)
         
-
-        
+class ListMessageView(APIView):
+    serializer_class = MessageSerializer   
+    def get(self, request):
+        chat_static_id = request.query_params.get('chat_static_id')
+        print(chat_static_id)
+        chat = Chat.objects.filter(static_id = chat_static_id).first()
+        if not chat:
+            return Response({"message" : "No such chat"}, status = status.HTTP_400_BAD_REQUEST)           
+        message = Message.objects.filter(chat = chat).order_by('-timestamp')
+        serializer = MessageSerializer(message, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)       
 
