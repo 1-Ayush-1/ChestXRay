@@ -1,0 +1,39 @@
+.home h1{
+    background-color:blue;
+}
+
+.dropdown
+{
+    display: none;  /* Hide dropdown content by default */
+    position: absolute;
+    background-color: #f9f9f9;  /* Background color of dropdown */
+    min-width: 160px;  /* Set a minimum width for dropdown */
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);  /* Add shadow effect */
+    z-index: 1;  
+}
+
+.dropdown NavDropdown.Item{
+    color: black;  /* Text color of dropdown links */
+    padding: 12px 16px;  /* Padding inside dropdown links */
+    text-decoration: none;  /* Remove underline */
+    display: block;
+    text-align: left;  /* Align text to the left */
+}
+
+.welcome{
+    margin-left:125px;
+}
+
+.dropdown-content NavDropdown.Item:hover {
+    background-color: #f1f1f1;  /* Darken background color on hover */
+}
+
+h3{
+    margin-left : 40px;
+    text-align: center;
+
+}
+
+.Patient{
+    margin-left: 1000px;
+}

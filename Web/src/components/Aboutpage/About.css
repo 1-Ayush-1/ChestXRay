@@ -1,0 +1,13 @@
+.About p{
+    color:blue
+}
+.About{
+    display:flex;
+    flex-direction: column;
+
+}
+
+.About img{
+    width:50%;
+    
+}
