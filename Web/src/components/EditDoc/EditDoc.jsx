@@ -173,8 +173,8 @@ const EditDoc = () => {
       <br/> <br/> <br/> <br/>
       </div>
 
-      <button className="buttons edit" onClick={handleSave}>Save</button>
-      <button className="buttons edit" onClick={() => navigate('/Home/ViewD')}>Cancel</button>
+      <button className="SaveD" onClick={handleSave}>Save</button>
+      <button className="CancelD" onClick={() => navigate('/Home/ViewD')}>Cancel</button>
     </div>
   );
 };
