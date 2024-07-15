@@ -1,0 +1,3 @@
+[submodule "Web/Chest_xray-Abhi_Frontend"]
+	path = Web/Chest_xray-Abhi_Frontend
+	url = https://github.com/Imeanabhi/Chest_xray-Abhi_Frontend.git
