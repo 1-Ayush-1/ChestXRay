@@ -39,7 +39,7 @@ const data = response.data;
     <div>
   <Navbar expand="lg" className="bg" text='center'>
     <Container>
-      <Navbar.Brand href="">HOSPITAL MANAGEMENT SYSTEM</Navbar.Brand>
+      <Navbar.Brand href="">Chest XRay Analysis Admin</Navbar.Brand>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="me-auto ml-auto"> 

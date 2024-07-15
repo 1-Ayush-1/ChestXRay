@@ -2,6 +2,8 @@
 .navbar {
     background-color: #343a40;
     padding: 1rem 2rem;
+    width:100%;
+    gap:10px;
   }
   
   .navbar-brand {
@@ -9,6 +11,8 @@
     font-size: 1.5rem;
     font-weight: bold;
     color:white;
+    width:200%;
+    max-width:200%;
     display:center;
   }
   
