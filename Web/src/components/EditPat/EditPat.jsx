@@ -39,6 +39,7 @@ const EditPat = () => {
 
   return (
     <div>
+      <div className="ContainerEdit">
       <h3>Edit Patient</h3>
       <label>
         Name : <br/>
@@ -178,7 +179,6 @@ const EditPat = () => {
         <input
           name="height"
           type="number"  // Specifies the type as text
-         
           value={patient.height}
           onChange={handleInputChange}
           placeholder="Enter height"
@@ -186,8 +186,9 @@ const EditPat = () => {
       </label>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
       <br/> <br/> <br/> <br/>
-      <button onClick={handleSave}>Save</button>
-      <button onClick={() => navigate('/Home/ViewP')}>Cancel</button>
+      <button className="Save"  onClick={handleSave}>Save</button>
+      <button className="Cancel" onClick={() => navigate('/Home/ViewP')}>Cancel</button>
+      </div>
     </div>
   );
 };
