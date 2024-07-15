@@ -1,3 +1,6 @@
+import 'package:check/Sourish/Screens/doctor_detail_screen.dart';
+import 'package:check/Sourish/Screens/doctor_model.dart';
+import 'package:check/Sourish/Screens/doctor_search_screen.dart';
 import 'package:check/riya/message_container.dart';
 import 'package:check/riya/postpatient.dart';
 import 'package:check/saumya/dummy.dart';
@@ -17,7 +20,9 @@ import 'saumya/login_page.dart';
 import 'saumya/forgot_password_page.dart';
 import 'tanish/signup.dart';
 import 'saumya/reset_password_page.dart';
-import 'saumya/user_provider.dart'; // Replace with your UserProvider file
+import 'saumya/user_provider.dart';
+
+ // Replace with your UserProvider file
 // import 'unnati/main.dart';
 
 const primary = Color(0xff4268b0);
@@ -64,7 +69,8 @@ class MyApp extends StatelessWidget {
           'nish_route/': (context) => const Uploader_nish(), //nishkarsh
           'give_review/': (context) => const MessageContainer(),
           'patient_profile/': (context) => Postpatient_Container(staticId: 'b2e48483-f91e-4e8c-bec2-e833b204f32a', token: '0399e7febfd5bbf32b51272d30a902592f766ec8'),
-          
+          'doctor_detail/': (context) => DoctorDetailScreen(doctor: ModalRoute.of(context)!.settings.arguments as Doctor),
+          'doctor_search/': (context) => SearchScreen(),
 
       }
     );
