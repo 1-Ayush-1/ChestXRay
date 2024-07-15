@@ -1,4 +1,7 @@
+import 'package:check/main.dart';
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'user_profile.dart';
 import 'reports.dart';
@@ -25,12 +28,23 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
     _futureUserReports = ApiService().fetchUserReports(widget.token);
   }
 
-  @override
+  
+  
+  
   Widget build(BuildContext context) {
+
+    final userProvider = Provider.of<UserProvider>(context);
+    
+    // Accessing user data from UserProvider
+    final user = userProvider.user;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Profile'),
+      appBar: AppBar
+      (
+       
+            
+        // title: const Text('User Profile'),
       ),
+      
       body: FutureBuilder<UserProfile>(
         future: _futureUserProfile,
         builder: (context, snapshot) {
@@ -43,64 +57,49 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
               child: Text('Error fetching data: ${snapshot.error}'),
             );
           } else if (snapshot.hasData) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  color: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: snapshot.data!.profilePhoto!.isNotEmpty
-                            ? NetworkImage(snapshot.data!.profilePhoto!)
-                            : const AssetImage('assets/screen.png')
-                                as ImageProvider,
-                      ),
-                      const SizedBox(width: 16.0),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hello, ${snapshot.data!.name}!',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+                    decoration: BoxDecoration( borderRadius: BorderRadius.circular(8), color: Color(0xff4268b0)),
+                    width:290, height: 114,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundImage: snapshot.data!.profilePhoto!.isNotEmpty
+                              ? NetworkImage(snapshot.data!.profilePhoto!)
+                              : const AssetImage('assets/screen.png') as ImageProvider,
+                        ),
+                        // const SizedBox(width: 16.0),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hello, ${snapshot.data!.name}!',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '@${snapshot.data!.staticId}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16.0),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Please find your previous reports here -',
-                    style: TextStyle(fontSize: 16),
+                  const SizedBox(height: 16.0),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Please find your previous reports here -',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Until: Yesterday',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 16.0),
-                Expanded(
-                  child: FutureBuilder<List<UserReport>>(
+                  const SizedBox(height: 16.0),
+                  FutureBuilder<List<UserReport>>(
                     future: _futureUserReports,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -112,35 +111,47 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
                           child: Text('Error fetching data: ${snapshot.error}'),
                         );
                       } else if (snapshot.hasData) {
+                        final reports = snapshot.data!;
+
+                        if (reports.isEmpty) {
+                          return const Center(
+                            child: Text('No reports available'),
+                          );
+                        }
+
                         return ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: snapshot.data!.length,
+                          shrinkWrap: true, // Important for scrollable inside SingleChildScrollView
+                          physics: NeverScrollableScrollPhysics(), // Disable inner ListView scrolling
+                          itemCount: reports.length,
                           itemBuilder: (context, index) {
-                            final report = snapshot.data![index];
+                            final report = reports[index];
                             return GestureDetector(
-                              onTap: () {
-                                if (report.doctorComments! == "No comments") {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ReportDetailPage(
-                                        token: widget.token,
-                                        reportStaticId: report.staticId,
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ReportDetailDocPage(
-                                        token: widget.token,
-                                        reportStaticId: report.staticId,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
+                              onTap: report.aiImage != null
+                                  ? () {
+                                      if (report.doctorComments == "No Comments") {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ReportDetailPage(
+                                              token: widget.token,
+                                              reportStaticId: report.staticId,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ReportDetailDocPage(
+                                              token: widget.token,
+                                              reportStaticId: report.staticId,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  : null,
                               child: Card(
                                 margin: const EdgeInsets.only(bottom: 16.0),
                                 child: Padding(
@@ -149,7 +160,7 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
                                     children: [
                                       ClipOval(
                                         child: Image.network(
-                                          report.aiImage!,
+                                          report.aiImage ?? report.originalImage!,
                                           width: 80,
                                           height: 80,
                                           fit: BoxFit.cover,
@@ -161,7 +172,7 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
                                       const SizedBox(width: 16.0),
                                       Expanded(
                                         child: Text(
-                                          report.aiText ?? 'no_text',
+                                          report.aiImage != null ? (report.aiText ?? 'no_text') : 'not processed',
                                           style: const TextStyle(fontSize: 16),
                                         ),
                                       ),
@@ -179,8 +190,8 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
                       }
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           } else {
             return const Center(
@@ -192,3 +203,4 @@ class _ReportDetailsPageState extends State<ReportDetailsPage> {
     );
   }
 }
+
