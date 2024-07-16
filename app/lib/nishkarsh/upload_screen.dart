@@ -1,32 +1,31 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+// import 'saumya/user_provider.dart'; // Adjust the import path based on your project structure
 
-Future<UploadResponse> uploadImage(File image) async {
+Future<UploadResponse> uploadImage(File image, String random, String staticId) async {
   try {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://51.20.3.117/images/upload_scan/'), // For Android Emulator
+      Uri.parse('http://51.20.3.117/images/upload_scan/'), // Adjust URL as per your backend
     );
-    String patientStaticId = '2e974717-aeb4-4f3c-9b65-1a08b45c3842';
-    //token : 7203e82f5db71e8baf6fddf08c80a24eb00be56d
-    
-    request.fields['patient_static_id'] = patientStaticId; // Add patient_static_id
-    
+
+    request.fields['patient_static_id'] = staticId; // Add patient_static_id
+    request.headers['Authorization'] = 'Token $random';
+
     String fileName = image.path.split('/').last; // Get file name with extension
-    
-    request.headers['Authorization'] = 'Token 7203e82f5db71e8baf6fddf08c80a24eb00be56d';
-    
+
     request.files.add(
       await http.MultipartFile.fromPath(
         'original_image',
         image.path,
         filename: fileName, // Set the original file name with extension
       ),
-
     );
 
     var response = await request.send();
@@ -56,8 +55,9 @@ class UploadResponse {
     );
   }
 }
+
 class Uploader_nish extends StatefulWidget {
-  const Uploader_nish({super.key});
+  const Uploader_nish({Key? key}) : super(key: key);
 
   @override
   State<Uploader_nish> createState() => _Uploader_nishState();
@@ -65,20 +65,24 @@ class Uploader_nish extends StatefulWidget {
 
 class _Uploader_nishState extends State<Uploader_nish> {
   File? _image;
-  // XFile? 
   Future<UploadResponse>? _futureResponse;
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-                      final XFile? image =
-                          await picker.pickImage(source: ImageSource.camera);
-                      setState(() {
-                        _image = image as File?;
-                      });
+Future<void> _pickImage() async {
+  final ImagePicker picker = ImagePicker();
+  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+  if (image != null) {
+    setState(() {
+      _image = File(image.path); // Create a File object from XFile's path
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Image Picker'),
@@ -152,7 +156,7 @@ class _Uploader_nishState extends State<Uploader_nish> {
                   onPressed: () {
                     if (_image != null) {
                       setState(() {
-                        _futureResponse = uploadImage(_image!);
+                        _futureResponse = uploadImage(_image!, user!.token, user.staticId);
                       });
                     }
                   },
@@ -184,37 +188,41 @@ class _Uploader_nishState extends State<Uploader_nish> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_books),
-            label: 'Library',
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
-        currentIndex: 0,
-        selectedItemColor: Colors.blue,
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          }
+          // Handle other items as needed
+        },
+        currentIndex: 0, // Set the initial selected index
+        selectedItemColor: Colors.blue, // Change the selected item color
       ),
     );
   }
 
-  FutureBuilder<UploadResponse> buildFutureBuilder() {
+  Widget buildFutureBuilder() {
     return FutureBuilder<UploadResponse>(
       future: _futureResponse,
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return Text(snapshot.data!.message ?? 'Your image has been added Sucessfully');
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          return Text(snapshot.data!.message ?? 'Image uploaded successfully');
         } else if (snapshot.hasError) {
-          return Text('${snapshot.error}');
+          return Text('Error: ${snapshot.error}');
+        } else {
+          return Container();
         }
-      
-        return const CircularProgressIndicator();
       },
     );
   }

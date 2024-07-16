@@ -3,10 +3,33 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../saumya/login_page.dart'; // Import your LoginPage
+
+// Import your LoginPage
+import '../saumya/login_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const SignUpScreen(),
+    );
+  }
+}
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  const SignUpScreen({Key? key}) : super(key: key);
 
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
@@ -27,37 +50,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate() && _termsAccepted) {
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/auth/signup/'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'username': _nameController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
-          'confirm_password': _confirmPasswordController.text,
-        }),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up successful! Token: ${data['token']}')));
-        // Optionally navigate to another page after sign up
-      } else {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Signup failed: ${data['message']}')));
+      try {
+        final response = await http.post(
+          Uri.parse('http://51.20.3.117/auth/signup/'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, String>{
+            'username': _nameController.text,
+            'email': _emailController.text,
+            'password': _passwordController.text,
+            'confirm_password': _confirmPasswordController.text,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Sign up successful! Token: ${data['token']}')),
+          );
+        } else {
+          final data = jsonDecode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Signup failed: ${data['message']}')),
+          );
+        }
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred: $error')),
+        );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please accept the terms and conditions')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please accept the terms and conditions')),
+      );
     }
   }
 
-  void _signInWithGoogle() async {
+  Future<void> _signInWithGoogle() async {
     try {
       await _googleSignIn.signIn();
       // Handle Google sign in logic
     } catch (error) {
-      print(error);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google Sign-In failed: $error')),
+      );
     }
   }
 
@@ -83,7 +120,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Name',
                     hintText: 'Enter your name',
-                    
+                    filled: true,
+                    fillColor: Colors.white, // Changed to white
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
@@ -100,7 +138,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email ID',
-                    
+                    filled: true,
+                    fillColor: Colors.white, // Changed to white
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
@@ -120,7 +159,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    
+                    filled: true,
+                    fillColor: Colors.white, // Changed to white
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
@@ -148,7 +188,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _confirmPasswordController,
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
-                    
+                    filled: true,
+                    fillColor: Colors.white, // Changed to white
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10.0)),
                     ),
@@ -190,27 +231,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         // Navigate to terms and conditions page
                       },
                       child: Text.rich(TextSpan(
-                        text: 'I accept the ',
-                        style: const TextStyle(color: Colors.black),
-                        children: <TextSpan>[
-                          TextSpan(
-                            text: 'terms and conditions',
-                            style: TextStyle(
-                              decoration: TextDecoration.underline,
-                              color: Colors.blue,
-                            ),
+                          text: 'I accept the ',
+                          style: const TextStyle(
+                            color: Colors.black,
                           ),
-                        ],
-                      )),
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: 'terms and conditions',
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ])),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: _signUp,
-                  child: const Text('Sign Up'),
+                  child: const Text(
+                    'Sign Up',
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Color(0xFF1A73E8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                     ),
@@ -221,38 +265,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ElevatedButton.icon(
                   onPressed: _signInWithGoogle,
                   icon: const Icon(FontAwesomeIcons.google),
-                  label: const Text('Sign In with Google', style: TextStyle(color: Colors.black)),
+                  label: const Text(
+                    'Sign In with Google',
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                     ),
-                    side: const BorderSide(color: Colors.blue),
+                    side: const BorderSide(color: Color(0xFF1A73E8)),
                     padding: const EdgeInsets.symmetric(vertical: 14.0),
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () {
-                    // Navigate to login page
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
                     );
                   },
                   child: Text.rich(TextSpan(
-                    text: 'Already a member?',
-                    style: const TextStyle(color: Colors.black),
-                    children: <TextSpan>[
-                      TextSpan(
-                        text: '  Log In',
-                        style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.blue,
-                        ),
+                      text: 'Already a member?',
+                      style: const TextStyle(
+                        color: Colors.black,
                       ),
-                    ],
-                  )),
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: '  Log In',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ])),
                 ),
               ],
             ),
@@ -262,3 +311,4 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
+

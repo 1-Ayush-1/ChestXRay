@@ -1,12 +1,17 @@
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'api_service.dart';
 import 'image_model.dart';
+import 'update_doc.dart'; // Import the UpdateDoc screen
 
 class ReportDetailPage extends StatefulWidget {
   final String? reportStaticId;
   final String token;
 
-  const ReportDetailPage({Key? key, required this.reportStaticId, required this.token}) : super(key: key);
+  const ReportDetailPage(
+      {Key? key, required this.reportStaticId, required this.token})
+      : super(key: key);
 
   @override
   _ReportDetailPageState createState() => _ReportDetailPageState();
@@ -15,7 +20,11 @@ class ReportDetailPage extends StatefulWidget {
 class _ReportDetailPageState extends State<ReportDetailPage> {
   late Future<Map<String, dynamic>> _futureUserData;
   late Future<ImageData> _futureReportData;
+
   bool isLoading = true;
+  void debug() {
+    print("ok");
+  }
 
   @override
   void initState() {
@@ -43,11 +52,11 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
+    final userProvider = Provider.of<UserProvider>(context);
+    // Accessing user data from UserProvider
+    final user = userProvider.user;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Report Detail'),
-        backgroundColor: Colors.blue,
-      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : FutureBuilder<Map<String, dynamic>>(
@@ -58,7 +67,6 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.hasData) {
-                  final userData = snapshot.data!;
                   return FutureBuilder<ImageData>(
                     future: _futureReportData,
                     builder: (context, snapshot) {
@@ -69,73 +77,77 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                       } else if (snapshot.hasData) {
                         final reportData = snapshot.data!;
                         return Padding(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
+                          padding: EdgeInsets.all(0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // User Info
+
                               Container(
-                                color: Colors.lightBlue,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.04,
-                                  vertical: screenHeight * 0.01,
-                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 40, horizontal: 16),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(40),
+                                    color: Color(0xff4268b0)),
+                                width: 440,
+                                height: 125,
                                 child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     CircleAvatar(
-                                      radius: screenWidth * 0.08,
-                                      backgroundImage: userData['profile_pic'] != null
-                                          ? NetworkImage(userData['profile_pic'])
-                                          : const AssetImage('assets/screen.png') as ImageProvider,
+                                      radius: 40,
+                                      backgroundImage:
+                                          user!.profilePhoto!.isNotEmpty
+                                              ? NetworkImage(user.profilePhoto!)
+                                              : const AssetImage(
+                                                      'assets/screen.png')
+                                                  as ImageProvider,
                                     ),
-                                    SizedBox(width: screenWidth * 0.04),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Hello, ${userData['name']}!',
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.05,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                    // const SizedBox(width: 16.0),
+                                    SizedBox(width: 30),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Hello, ${user.name}!',
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
                                           ),
-                                          SizedBox(height: screenHeight * 0.005),
-                                          Text(
-                                            '@${userData['static_id']}',
-                                            style: TextStyle(
-                                              fontSize: screenWidth * 0.04,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
+
                               SizedBox(height: screenHeight * 0.03),
                               // Report Data
                               Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   reportData.originalImage != null
                                       ? Image.network(
                                           reportData.originalImage!,
                                           width: screenWidth * 0.4,
                                           height: screenHeight * 0.2,
-                                          errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-                                            return Image.asset('assets/screen.png', width: screenWidth * 0.4, height: screenHeight * 0.2);
+                                          errorBuilder: (BuildContext context,
+                                              Object exception,
+                                              StackTrace? stackTrace) {
+                                            return Image.asset(
+                                                'assets/screen.png',
+                                                width: screenWidth * 0.4,
+                                                height: screenHeight * 0.2);
                                           },
                                         )
-                                      : Image.asset('assets/screen.png', width: screenWidth * 0.4, height: screenHeight * 0.2),
+                                      : Image.asset('assets/screen.png',
+                                          width: screenWidth * 0.4,
+                                          height: screenHeight * 0.2),
                                   SizedBox(width: screenWidth * 0.05),
-                                  Text('Your Image', style: TextStyle(fontSize: screenWidth * 0.04)),
+                                  Text('Your Image',
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04)),
                                 ],
                               ),
                               SizedBox(height: screenHeight * 0.03),
@@ -148,17 +160,48 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                                           reportData.aiImage!,
                                           width: screenWidth * 0.4,
                                           height: screenHeight * 0.2,
-                                          errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-                                            return Image.asset('assets/screen.png', width: screenWidth * 0.4, height: screenHeight * 0.2);
+                                          errorBuilder: (BuildContext context,
+                                              Object exception,
+                                              StackTrace? stackTrace) {
+                                            return Image.asset(
+                                                'assets/screen.png',
+                                                width: screenWidth * 0.4,
+                                                height: screenHeight * 0.2);
                                           },
                                         )
-                                      : Image.asset('assets/doctor.jpeg', width: screenWidth * 0.4, height: screenHeight * 0.2),
+                                      : Image.asset('assets/doctor.jpeg',
+                                          width: screenWidth * 0.4,
+                                          height: screenHeight * 0.2),
                                   SizedBox(width: screenWidth * 0.05),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('AI Image', style: TextStyle(fontSize: screenWidth * 0.04)),
-                                      SizedBox(height: screenHeight * 0.01),
+                                      reportData.aiImage != null
+                                          ? Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text('AI Image',
+                                                    style: TextStyle(
+                                                        fontSize: 16)),
+                                                SizedBox(height: 10),
+                                                Text(reportData.aiText ??
+                                                    ''), // Show AI text if available, otherwise show an empty string
+                                              ],
+                                            )
+                                          : const Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text('AI Image',
+                                                    style: TextStyle(
+                                                        fontSize: 16)),
+                                                SizedBox(height: 10),
+                                                Text(
+                                                    ""), // Empty text widget if AI image is null
+                                              ],
+                                            ),
                                     ],
                                   ),
                                 ],
@@ -169,19 +212,28 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    // Handle Consult doctor button press
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UpdateDoc(reportId: reportData.staticId, token: user.token,),
+                                      ),
+                                    );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
+                                    backgroundColor: Color(0xff4268b0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                                      borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.02),
                                     ),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: screenHeight * 0.02),
                                     child: Text(
                                       'Consult doctor',
-                                      style: TextStyle(fontSize: screenWidth * 0.05, color: Colors.white),
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.05,
+                                          color: Colors.white),
                                     ),
                                   ),
                                 ),
@@ -199,6 +251,26 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                 }
               },
             ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          }
+          // Handle other items as needed
+        },
+        currentIndex: 0, // Set the initial selected index
+        selectedItemColor: Colors.blue, // Change the selected item color
+      ),
     );
   }
 }

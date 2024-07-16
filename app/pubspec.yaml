@@ -89,6 +89,8 @@ flutter:
     - assets/sample1.png
     - assets/google_logo.png
     - assets/user.jpg
+    - assets/screen.png
+    - assets/doctor.jpeg
     
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

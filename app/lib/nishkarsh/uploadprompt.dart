@@ -29,7 +29,7 @@ class UploadPromptScreen extends StatelessWidget {
               // UploadInstructions(),
             ],
           )
-        ],
+        ],/////////////////////////////////////////////////////////////////////
       ),
       bottomNavigationBar: BottomNavigationBar(
         fixedColor: primary,

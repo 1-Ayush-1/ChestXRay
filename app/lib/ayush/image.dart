@@ -1,24 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-Future<UploadResponse> uploadImage(File image) async {
+
+
+Future<UploadResponse> uploadImage(File image, String random, String Static_id) async {
+
   try {
     var request = http.MultipartRequest(
       'POST',
       Uri.parse('http://51.20.3.117/images/upload_scan/'), // For Android Emulator
     );
-    String patientStaticId = '2e974717-aeb4-4f3c-9b65-1a08b45c3842';
+    String patientStaticId = '$Static_id';
     //token : 7203e82f5db71e8baf6fddf08c80a24eb00be56d
-    
+    print(random);
+    print(Static_id);
     request.fields['patient_static_id'] = patientStaticId; // Add patient_static_id
     
     String fileName = image.path.split('/').last; // Get file name with extension
     
-    request.headers['Authorization'] = 'Token 7203e82f5db71e8baf6fddf08c80a24eb00be56d';
+    request.headers['Authorization'] = 'Token $random';
     
     request.files.add(
       await http.MultipartFile.fromPath(
@@ -82,6 +88,10 @@ class _UploaderState extends State<Uploader> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    
+    // Accessing user data from UserProvider
+    final user = userProvider.user;
     return Scaffold(
       appBar: AppBar(
         title: Text('Image Picker'),
@@ -155,7 +165,7 @@ class _UploaderState extends State<Uploader> {
                   onPressed: () {
                     if (_image != null) {
                       setState(() {
-                        _futureResponse = uploadImage(_image!);
+                        _futureResponse = uploadImage(_image!,user!.token,user.staticId);
                       });
                     }
                   },
@@ -186,23 +196,25 @@ class _UploaderState extends State<Uploader> {
           _futureResponse == null ? Container() : buildFutureBuilder(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+     bottomNavigationBar: BottomNavigationBar(
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_books),
-            label: 'Library',
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
-        currentIndex: 0,
-        selectedItemColor: Colors.blue,
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          }
+          // Handle other items as needed
+        },
+        currentIndex: 0, // Set the initial selected index
+        selectedItemColor: Colors.blue, // Change the selected item color
       ),
     );
   }
@@ -223,11 +235,3 @@ class _UploaderState extends State<Uploader> {
   }
 }
 
-void main() {
-  runApp(MaterialApp(
-    title: 'Image Upload Example',
-    home: Scaffold(
-      body: Uploader(),
-    ),
-  ));
-}

@@ -46,8 +46,19 @@ class _LoginPageState extends State<LoginPage> {
         // Save user data using Provider
         // ignore: use_build_context_synchronously
         Provider.of<UserProvider>(context, listen: false).setUser(user);
+          if (user.occupation == null) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          } 
+          else {
+            if (user.occupation == "Doc") {
+               Navigator.pushNamed(context, 'patient_search_screen/');
+           } else {
+            Navigator.pushNamed(context, 'patient_menu/');
+           }
+        }
 
-        Navigator.pushNamed(context, 'patient_menu/'); // Navigate on success
+
+        // Navigate on success
         print('Login successful. Token: ${user.token}');
       } else {
         // Handle error responses

@@ -91,6 +91,14 @@ class _ChooseImageScreenState extends State<ChooseImageScreen> {
             label: 'Settings',
           ),
         ],
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          }
+          // Handle other items as needed
+        },
+        currentIndex: 0, // Set the initial selected index
+        selectedItemColor: Colors.blue, // Change the selected item color
       ),
     );
   }

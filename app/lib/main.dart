@@ -12,7 +12,9 @@ import 'package:check/ayush/otp.dart';
 import 'package:check/ayush/test.dart';
 import 'package:check/ayush/phone.dart';
 import 'package:check/ayush/verify.dart';
+import 'package:check/tanish/patient_search.dart';
 import 'package:check/unnati/main.dart';
+import 'package:check/vaibhav/chat.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -71,7 +73,8 @@ class MyApp extends StatelessWidget {
           'patient_profile/': (context) => Postpatient_Container(staticId: 'b2e48483-f91e-4e8c-bec2-e833b204f32a', token: '0399e7febfd5bbf32b51272d30a902592f766ec8'),
           'doctor_detail/': (context) => DoctorDetailScreen(doctor: ModalRoute.of(context)!.settings.arguments as Doctor),
           'doctor_search/': (context) => SearchScreen(),
-
+          'patient_search_screen/': (context) => PatientSearchScreen(),
+          'chat_message/': (context) =>  ChatScreen(), //Vaibhav
       }
     );
   }

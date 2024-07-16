@@ -1,0 +1,1 @@
+ /home/kxr-w41/Downloads/backend_cognix/chest-X-Ray/app/.dart_tool/flutter_build/643ad80b8a081e15913a30e30abd652d/native_assets.yaml: 

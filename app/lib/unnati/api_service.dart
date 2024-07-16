@@ -68,17 +68,28 @@ class ApiService {
     }
   }
 
-//   Future<void> updateDoctorCommentsU(String staticId, String comments) async {
-//     final String updateCommentsUrl = '$baseUrl/images/doc_comments/$staticId/';
-    
-//     final Map<String, String> body = {'doctor_comments': comments};
+  Future<void> updateDoctorCommentsU(String staticId, String comments) async {
+  final String baseUrl = "http://51.20.3.117";  // Replace with your actual base URL
+  final String updateCommentsUrl = '$baseUrl/images/doc_comments/$staticId/';
 
-//     final response = await http.patch(Uri.parse(updateCommentsUrl),  body: json.encode(body));
+  final body = {'doctor_comments': comments};
+  print(updateCommentsUrl);
+  try {
+    final response = await http.patch(
+      Uri.parse(updateCommentsUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(body),
+    );
 
-//     if (response.statusCode == 200) {
-//       print('Doctor comments updated successfully');
-//     } else {
-//       throw Exception('Failed to update doctor comments: ${response.statusCode}');
-//     }
-//   }
+    if (response.statusCode == 200) {
+      print('Doctor comments updated successfully');
+    } else {
+      throw Exception('Failed to update doctor comments: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Failed to update doctor comments: $e');
+  }
+}
 }
