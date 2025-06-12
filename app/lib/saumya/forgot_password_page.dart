@@ -46,7 +46,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   Future<void> recover() async {
     
-    String url = 'http://51.20.3.117/auth/send-otp/'; // Replace with your backend URL
+    String url = 'http://51.20.3.117/api/auth/send-otp/'; // Replace with your backend URL
 
     try {
       final response = await http.post(

@@ -7,7 +7,7 @@ import 'image_model_doc.dart';
 // import 'comments.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://51.20.3.117';
+  static const String baseUrl = 'http://51.20.3.117/api';
   
   Future<UserProfile> fetchUserProfile(String token) async {
     final response = await http.get(
@@ -69,7 +69,7 @@ class ApiService {
   }
 
   Future<void> updateDoctorCommentsU(String staticId, String comments) async {
-  final String baseUrl = "http://51.20.3.117";  // Replace with your actual base URL
+  final String baseUrl = "http://51.20.3.117/api";  // Replace with your actual base URL
   final String updateCommentsUrl = '$baseUrl/images/doc_comments/$staticId/';
 
   final body = {'doctor_comments': comments};

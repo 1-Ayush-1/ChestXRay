@@ -1,15 +1,30 @@
+import 'dart:convert';
+
+import 'package:check/nishkarsh/profileheader.dart';
+import 'package:check/nishkarsh/usermenu.dart';
+import 'package:check/riya/postmessage.dart';
 import 'package:check/saumya/user_provider.dart';
+import 'package:check/vaibhav/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import 'image_model_doc.dart';
 
 class ReportDetailDocPage extends StatefulWidget {
-  final String? reportStaticId;
+  final String reportStaticId;
   final String token;
+  final String? doctorId;
+  final String? doctorName;
+  final String? doctorImageUrl;
 
-  const ReportDetailDocPage(
-      {Key? key, required this.reportStaticId, required this.token})
+  ReportDetailDocPage(
+      {Key? key,
+      required this.reportStaticId,
+      required this.token,
+      this.doctorId,
+      this.doctorImageUrl,
+      this.doctorName})
       : super(key: key);
 
   @override
@@ -20,18 +35,81 @@ class _ReportDetailDocPageState extends State<ReportDetailDocPage> {
   late Future<Map<String, dynamic>> _futureUserData;
   late Future<ImageDocData> _futureReportData;
   bool isLoading = true;
+  String occupation = 'patient';
 
   @override
   void initState() {
     super.initState();
     fetchData();
   }
+  
+  Future<void> create_chat() async {
+    String url = 'http://51.20.3.117/api/chat/create_chat/';
+
+    occupation='patient';
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Token ${widget.token}',
+        },
+        body: jsonEncode({
+          'static_id': widget.reportStaticId
+        }),
+      );
+      Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+      String chatStaticId = jsonResponse['static_id']; // Access the specific field
+
+      print('Sending POST request to: $url');
+      print('Response status code: ${response.statusCode}');
+
+      if (response.statusCode == 201) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              token: widget.token,
+              chatStaticId: chatStaticId,
+              occupation: occupation,
+              Namee: widget.doctorName,
+            ),
+          ),
+        );
+      } else {
+        print('Failed to send. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error during sending message: $e');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Failed to connect to the server. Please check your connection."),
+            actions: <Widget>[
+              TextButton(
+                child: const Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
 
   Future<void> fetchData() async {
+
+
+    print("check karo ${widget.reportStaticId}");
+    print(widget.doctorId);
     try {
       _futureUserData = ApiService().fetchUserData(widget.token);
-      _futureReportData =
-          ApiService().fetchReportDocData(widget.reportStaticId!);
+      _futureReportData = ApiService().fetchReportDocData(widget.reportStaticId!);
 
       await Future.wait([_futureUserData, _futureReportData]);
 
@@ -46,194 +124,196 @@ class _ReportDetailDocPageState extends State<ReportDetailDocPage> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    // Accessing user data from UserProvider
-    final user = userProvider.user;
+    final userzz = userProvider.user;
     double screenWidth = MediaQuery.of(context).size.width;
-
+    
     return Scaffold(
-      appBar: PreferredSize(
-          // backgroundColor: Colors.blue,
-
-          preferredSize: Size.fromHeight(150),
-          // Adjusted height
-          child: AppBar(actions: [
-            Container(
-              width: screenWidth,
-              height: screenWidth,
-              color: const Color.fromARGB(255, 255, 255, 255),
-              // padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // SizedBox(height: 100,),
-                  Container(
-                    // padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        color: Color(0xff4268b0)),
-                    width: 400, height: 285,
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundImage: user!.profilePhoto!.isNotEmpty
-                              ? NetworkImage(user.profilePhoto!)
-                              : const AssetImage('assets/screen.png')
-                                  as ImageProvider,
-                        ),
-                        const SizedBox(width: 16.0),
-                        SizedBox(width: 30),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hello, ${user.name}!',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ])),
+      
+      drawer: MenuDrawer(),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : FutureBuilder<Map<String, dynamic>>(
-              future: _futureUserData,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (snapshot.hasData) {
-                  //unnati                final userData = snapshot.data!;
-                  return FutureBuilder<ImageDocData>(
-                    future: _futureReportData,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      } else if (snapshot.hasData) {
-                        final reportData = snapshot.data!;
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Original Image and 'Your Image' row
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  reportData.originalImage != null
-                                      ? Image.network(
-                                          reportData.originalImage!,
-                                          width: 150,
-                                          height: 150,
-                                          errorBuilder: (BuildContext context,
-                                              Object exception,
-                                              StackTrace? stackTrace) {
-                                            return Image.asset(
-                                                'assets/screen.png');
-                                          },
-                                        )
-                                      : Image.asset('assets/screen.png'),
-                                  const SizedBox(width: 20),
-                                  const Text('Your Image',
-                                      style: TextStyle(fontSize: 16)),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              // AI Image and AI Text row
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  reportData.aiImage != null
-                                      ? Image.network(
-                                          reportData.aiImage!,
-                                          width: 150,
-                                          height: 150,
-                                          errorBuilder: (BuildContext context,
-                                              Object exception,
-                                              StackTrace? stackTrace) {
-                                            return Image.asset(
-                                                'assets/screen.png');
-                                          },
-                                        )
-                                      : Image.asset('assets/screen.png'),
-                                  const SizedBox(width: 20),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('AI Image',
-                                          style: TextStyle(fontSize: 16)),
-                                      const SizedBox(height: 10),
-                                      Text(reportData.aiText!),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              // Doctor's Comments
-                              Container(
-                                padding: EdgeInsets.all(12.0),
-                                color: Colors.lightBlue[100],
-                                child: Column(
+          : SingleChildScrollView(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _futureUserData,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (snapshot.hasData) {
+                    return FutureBuilder<ImageDocData>(
+                      future: _futureReportData,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        } else if (snapshot.hasData) {
+                          final reportData = snapshot.data!;
+                          return Padding(
+                            
+                            padding: EdgeInsets.all(8.0),
+                            child: Column(
+                              
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ProfileHeader(),
+                                SizedBox(height: 5),
+                                Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'Doctor\'s Comments',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      reportData.doctorComments!,
-                                      style: TextStyle(
-                                          fontSize: 16, color: Colors.black),
-                                    ),
-                                    SizedBox(height: 12),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.pushNamed(
-                                            context, 'give_review/');
-                                      },
-                                      child: Text(
-                                        'Give Reviews',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
-                                            decoration:
-                                                TextDecoration.underline),
-                                      ),
+                                    reportData.originalImage != null
+                                        ? Image.network(
+                                            reportData.originalImage!,
+                                            width: 150,
+                                            height: 150,
+                                            errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                              return Image.asset('assets/screen.png');
+                                            },
+                                          )
+                                        : Image.asset('assets/screen.png'),
+                                    const SizedBox(width: 20),
+                                    const Text('Your Image', style: TextStyle(fontSize: 16)),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    reportData.aiImage != null
+                                        ? Image.network(
+                                            reportData.aiImage!,
+                                            width: 150,
+                                            height: 150,
+                                            errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                              return Image.asset('assets/screen.png');
+                                            },
+                                          )
+                                        : Image.asset('assets/screen.png'),
+                                    const SizedBox(width: 20),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('AI Image', style: TextStyle(fontSize: 16)),
+                                        const SizedBox(height: 10),
+                                        if (reportData.aiText != null) Text(reportData.aiText!) else Text(""),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      } else {
-                        return const Center(child: Text('No report available'));
-                      }
-                    },
-                  );
-                } else {
-                  return const Center(child: Text('No user data available'));
-                }
-              },
+                                SizedBox(height: 20),
+                                Container(
+                                  padding: EdgeInsets.all(12.0),
+                                  height: 260,
+                                  width: screenWidth,
+                                  color: Colors.lightBlue[100],
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Doctor\'s Comments',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        reportData.doctorComments!,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      SizedBox(height: 12),
+                                      Spacer(),
+                                      Center(
+                                        child: GestureDetector(
+                                          onTap:(){
+                                            create_chat();
+                                          } ,
+                                          child: const Text(
+                                            'Chat with me',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color.fromARGB(255, 63, 136, 195),
+                                              decoration: TextDecoration.underline,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (reportData.doctorComments != "No Comments")
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => MessageContainer(
+                                            doctorId: widget.doctorId!,
+                                            doctorName: widget.doctorName!,
+                                            doctorImageUrl: widget.doctorImageUrl!,
+                                            token: userzz!.token,
+                                            reportStaticId: widget.reportStaticId,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Give review',
+                                      style: TextStyle(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color.fromARGB(255, 63, 136, 195),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Container(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => MessageContainer(
+                                              doctorId: widget.doctorId,
+                                              doctorName: widget.doctorName,
+                                              doctorImageUrl: widget.doctorImageUrl,
+                                              token: userzz!.token,
+                                              reportStaticId: widget.reportStaticId,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Give review',
+                                        style: TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color.fromARGB(255, 63, 136, 195),
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return Center(child: Text('No report available'));
+                        }
+                      },
+                    );
+                  } else {
+                    return Center(child: Text('No user data available'));
+                  }
+                },
+              ),
             ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -252,8 +332,8 @@ class _ReportDetailDocPageState extends State<ReportDetailDocPage> {
           }
           // Handle other items as needed
         },
-        currentIndex: 0, // Set the initial selected index
-        selectedItemColor: Colors.blue, // Change the selected item color
+        currentIndex: 0,
+        selectedItemColor: Colors.blue,
       ),
     );
   }

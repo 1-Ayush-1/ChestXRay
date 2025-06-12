@@ -12,7 +12,7 @@ Future<UploadResponse> uploadImage(File image, String random, String staticId) a
   try {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://51.20.3.117/images/upload_scan/'), // Adjust URL as per your backend
+      Uri.parse('http://51.20.3.117/api/images/upload_scan/'), // Adjust URL as per your backend
     );
 
     request.fields['patient_static_id'] = staticId; // Add patient_static_id

@@ -1,14 +1,14 @@
-import 'package:check/saumya/user_provider.dart';
+import 'package:check/nishkarsh/profileheader.dart';
+import 'package:check/nishkarsh/usermenu.dart';
+import 'package:check/unnati/update_doc.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:provider/provider.dart';
-
-
-
 class PatientSearchScreen extends StatefulWidget {
-  const PatientSearchScreen({super.key});
+  final String token;
+
+  PatientSearchScreen({Key? key, required this.token}) : super(key: key);
 
   @override
   State<PatientSearchScreen> createState() => _PatientSearchScreenState();
@@ -19,31 +19,28 @@ class _PatientSearchScreenState extends State<PatientSearchScreen> {
   List patients = [];
   List filteredPatients = [];
   String doctorImageUrl = '';
-  String token = "";
-  
 
   @override
   void initState() {
     super.initState();
     fetchDoctorDetails();
     fetchPatients();
-    // token = widget.user.toke;
   }
 
   Future<void> fetchDoctorDetails() async {
     try {
       final response = await http.get(
-        Uri.parse('http://51.20.3.117/users/doctortanish/'),
+        Uri.parse('http://51.20.3.117/api/users/doctortanish/'),
         headers: {
-          'Authorization': 'Token 42def62adfe6c14903943810eccca05ad8b84cdf',
+          'Authorization': 'Token ${widget.token}',
         },
       );
-
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
           doctorName = data['name'];
-          doctorImageUrl = 'http://51.20.3.117' + data['profile_photo'];
+          doctorImageUrl = 'http://51.20.3.117/api' + data['profile_photo'];
         });
         print('Doctor image URL: $doctorImageUrl');
       } else {
@@ -57,12 +54,12 @@ class _PatientSearchScreenState extends State<PatientSearchScreen> {
   Future<void> fetchPatients() async {
     try {
       final response = await http.get(
-        Uri.parse('http://51.20.3.117/users/patients/'),
+        Uri.parse('http://51.20.3.117/api/users/patients/'),
         headers: {
-          'Authorization': 'Token 42def62adfe6c14903943810eccca05ad8b84cdf',
+          'Authorization': 'Token ${widget.token}',
         },
       );
-
+      print(response.body);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -78,53 +75,44 @@ class _PatientSearchScreenState extends State<PatientSearchScreen> {
     }
   }
 
-  void navigateToAnotherScreen() {
-    // Example navigation logic
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const OtherScreen()), // Replace OtherScreen with the actual screen you want to navigate to
-    );
+  void filterPatients(String query) {
+    List<Map<String, dynamic>>? filteredList = [];
+    if (query.isNotEmpty) {
+      filteredList = patients.where((patient) {
+        final patientName =
+            patient['patient_name'].toString().toLowerCase();
+        return patientName.contains(query.toLowerCase());
+      }).cast<Map<String, dynamic>>().toList();
+    } else {
+      filteredList = List.from(patients);
+    }
+    setState(() {
+      filteredPatients = filteredList!.cast();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    
-    // Accessing user data from UserProvider
-    final user = userProvider.user;
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Welcome $doctorName!'),
-        backgroundColor: Colors.blue,
-        leading: doctorImageUrl.isNotEmpty
-            ? CircleAvatar(
-                backgroundImage: NetworkImage(
-                  doctorImageUrl,
-                ),
-              )
-            : const CircleAvatar(
-                child: Icon(Icons.person),
-              ),
-      ),
+      drawer: MenuDrawer(),
+      // appBar: AppBar(
+      //   title: Text('Patient Search'),
+      // ),
       body: Column(
-        
         children: [
-          
-          // void initState(){
-          // token = user.token;
-          // }
-          Container(
+          ProfileHeader(),
+          Padding(
             padding: const EdgeInsets.all(8.0),
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: navigateToAnotherScreen,
-              child: const Text(
-                'Search Patient',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.underline,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextField(
+                  onChanged: (value) => filterPatients(value),
+                  decoration: InputDecoration(
+                    hintText: 'Search Patients...',
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.search),
+                  ),
                 ),
               ),
             ),
@@ -134,73 +122,100 @@ class _PatientSearchScreenState extends State<PatientSearchScreen> {
               itemCount: filteredPatients.length,
               itemBuilder: (context, index) {
                 final patient = filteredPatients[index];
-                final patientImageUrl = patient['original_image_url'].startsWith('http')
-                    ? patient['original_image_url']
-                    : 'http://51.20.3.117' + patient['original_image_url'];
+                final patientImageUrl =
+                    patient['original_image_url'].startsWith('http')
+                        ? patient['original_image_url']
+                        : 'http://51.20.3.117/api' +
+                            patient['original_image_url'];
                 print('Patient image URL: $patientImageUrl');
-                return PatientCard(patient: patient, patientImageUrl: patientImageUrl);
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        UpdateDoc(
+                                      reportId: patient['image_static_id'],
+                                      token: widget.token,
+                                      
+                                    ),
+                                  ),
+                                );
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.all(8.0),
+                    child: ListTile(
+                      leading: Container(
+                        width: 60,
+                        height: 60,
+                        child: patientImageUrl.isNotEmpty
+                            ? Image.network(
+                                patientImageUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('Error loading patient image: $error');
+                                  return const Icon(Icons.error);
+                                },
+                              )
+                            : const Icon(Icons.person),
+                      ),
+                      title: Text(patient['patient_name']),
+                      subtitle: const Text(
+                          'Add a description which can describe about the video. Some other information...'),
+                    ),
+                  ),
+                );
               },
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
-        ],
-        currentIndex: 0,
-        onTap: (index) {
-          // Handle bottom navigation
-        },
-      ),
     );
   }
 }
 
-class PatientCard extends StatelessWidget {
+class PatientProfileScreen extends StatelessWidget {
   final Map patient;
   final String patientImageUrl;
 
-  const PatientCard({required this.patient, required this.patientImageUrl, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      
-      margin: const EdgeInsets.all(8.0),
-      child: ListTile(
-        leading: patientImageUrl.isNotEmpty
-            ? Image.network(
-                patientImageUrl,
-                errorBuilder: (context, error, stackTrace) {
-                  print('Error loading patient image: $error');
-                  return const Icon(Icons.error);
-                },
-              )
-            : const Icon(Icons.person),
-        title: Text(patient['patient_name']),
-        subtitle: const Text('Add a description which can describe about the video. Some other information...'),
-      ),
-    );
-  }
-}
-
-class OtherScreen extends StatelessWidget {
-  const OtherScreen({super.key});
+  const PatientProfileScreen({
+    required this.patient,
+    required this.patientImageUrl,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Other Screen'),
+        title: Text(patient['patient_name']),
       ),
-      body: const Center(
-        child: Text('This is another screen.'),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            patientImageUrl.isNotEmpty
+                ? Image.network(
+                    patientImageUrl,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      print('Error loading patient image: $error');
+                      return const Icon(Icons.error);
+                    },
+                  )
+                : const Icon(Icons.person, size: 120),
+            const SizedBox(height: 16),
+            Text('Patient Name: ${patient['patient_name']}'),
+            const SizedBox(height: 8),
+            Text('Patient ID: ${patient['patient_id']}'),
+            // Add more patient details as needed
+          ],
+        ),
       ),
     );
   }
 }
-
-

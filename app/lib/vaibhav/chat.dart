@@ -1,53 +1,57 @@
 import 'dart:convert';
+import 'package:check/saumya/user.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:check/saumya/user_provider.dart';
 
+
+
+// ignore: must_be_immutable
 class ChatScreen extends StatefulWidget {
-  @override
+  String? Namee;
+  String? token;
+  String? chatStaticId;
+  String? occupation;
+  ChatScreen({super.key, this.token, this.chatStaticId, this.occupation, this.Namee});
+
+
+   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+
   final TextEditingController _messageController = TextEditingController();
-  List<String> messages = []; // List to hold chat messages
+  List<Map<String, dynamic>> messages = [];
+  bool isSendingMessage = false;
+  
   ScrollController _scrollController = ScrollController();
 
-  void onHomeButtonPressed() {
-    print("Home button clicked");
+  @override
+  void initState() {
+    super.initState();
+    _fetchMessages(); // Fetch messages when the screen loads
+    print(widget.occupation);
   }
-
-  void onSettingsButtonPressed() {
-    print("Settings button clicked");
-  }
-
-  void onMessagesButtonPressed() {
-    print("Messages button clicked");
-  }
-
-  void onAttachButtonPressed() {
-    print("Attach button clicked");
-  }
-
-  void onSendButtonPressed() {
-    print("Send button clicked");
-    _chat(); // Call the function to send message
-  }
-
+  
   Future<void> _chat() async {
-    String url = 'http://51.20.3.117/chat/create_message/';
-    String bearerToken = '4d256ea6d224c62ed2cf021786193c16222b7c04';
-
+    String url = 'http://51.20.3.117/api/chat/create_message/';
+    isSendingMessage = true;
+    // String counter = (widget.occupation == null) ? 'patient' : (widget.occupation.toString());
+    // print(counter);
+    print("ho gya ${widget.occupation.toString()}");
     try {
       final response = await http.post(
         Uri.parse(url),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': '$bearerToken',
+          'Authorization': 'Token ${widget.token}',
         },
         body: jsonEncode({
-          'message': _messageController.text,
-          'sender' : 'patient',
-          'chat' : '3e1a70fd-ce0d-48c7-9672-7d534c61fb85'
+          'message': _messageController.text ?? '', // Ensure _messageController.text is not null
+          'sender': widget.occupation,
+          'chat': widget.chatStaticId,
         }),
       );
 
@@ -57,30 +61,18 @@ class _ChatScreenState extends State<ChatScreen> {
       if (response.statusCode == 201) {
         // Message sent successfully
         Map<String, dynamic> responseData = jsonDecode(response.body);
-        String token = responseData['message'];
-        print('Message Sent. Token: $token');
-        _messageController.clear(); // Clear message input field
-        // Optionally, fetch messages after sending a message
-        _fetchMessages();
-      } else if (response.statusCode == 401 || response.statusCode == 404) {
-        // Handle authorization or not found errors
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Error"),
-              content: const Text("Problem in sending the message."),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text("OK"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
+        String message = responseData['message'] ?? ''; // Handle null case
+        print(message);
+        setState(() {
+          messages.add({
+            'message': message,
+            'sender': widget.occupation,
+            'timestamp': DateTime.now().toString(),
+            'chat': 'chat',
+          });
+        });
+        _messageController.clear();
+        _scrollToBottom();
       } else {
         // Handle other status codes
         print('Failed to send. Status code: ${response.statusCode}');
@@ -109,35 +101,43 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _fetchMessages() async {
-    String url = 'http://51.20.3.117/chat/get_message/'; // Replace with your API endpoint
-    String bearerToken = '4d256ea6d224c62ed2cf021786193c16222b7c04';
-
+    String url = 'http://51.20.3.117/api/chat/get_message/';
     try {
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('$url?chat_static_id=${widget.chatStaticId}'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': '$bearerToken',
+          'Authorization': 'Token ${widget.token}',
         },
       );
 
       print('Fetching messages from: $url');
       print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         // Successful fetch
-        List<dynamic> responseData = jsonDecode(response.body);
-        setState(() {
-          messages.clear(); // Clear previous messages
-          messages.addAll(responseData.map((message) => message['text'].toString()));
-        });
+        dynamic responseData = jsonDecode(response.body);
+        if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+          List<dynamic> messagesData = responseData['data'];
 
-        // Scroll to the end of the list after updating messages
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+          // Sort messages by timestamp assuming 'timestamp' field is present in the response
+          messagesData.sort((a, b) => a['timestamp'].compareTo(b['timestamp']));
+
+          setState(() {
+            messages.clear(); // Clear previous messages
+            messages.addAll(messagesData.map((message) => {
+              'message': message['message'].toString() ?? '', // Handle null case
+              'sender': message['sender'], // Assuming 'sender' field is in the response
+              'timestamp': message['timestamp'] ?? '', // Handle null case
+              'chat': 'fetch',
+            }));
+          });
+          _scrollToBottom(); // Scroll to bottom after fetching messages
+        } else {
+          // Handle case where responseData is not a List
+          print('Failed to fetch messages. Invalid response data format.');
+        }
       } else {
         // Handle other status codes
         print('Failed to fetch messages. Status code: ${response.statusCode}');
@@ -145,21 +145,59 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       // Handle network or server errors
       print('Error during fetching messages: $e');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Failed to connect to the server. Please check your connection."),
+            actions: <Widget>[
+              TextButton(
+                child: const Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchMessages(); // Fetch messages when the screen loads
+  void _clearAllMessages() {
+    setState(() {
+      messages.clear(); // Clear all messages from the local state
+    });
+    print('All messages cleared successfully.');
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final userzzz = userProvider.user;
+    String occup =(userzzz!.occupation == null ) ? 'patient' :  (userzzz.occupation != null && userzzz.occupation == 'Doc') ? 'doctor' : 'patient';
+
+    String name = userzzz.username;
+    if(name.length <4) name=name;
+    else name=name.substring(0,4);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: const Row(
+
+        title: Row(
           children: [
             CircleAvatar(
               backgroundImage: NetworkImage('https://via.placeholder.com/150'),
@@ -168,13 +206,52 @@ class _ChatScreenState extends State<ChatScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hello Saumya", style: TextStyle(color: Colors.white)),
-                Text("@20B413",
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text( "Hello $name...", style: TextStyle(color: Colors.white)),
+               SizedBox(height: 5,),
+                if(userzzz.username.length > 10 )Text(userzzz.name.substring(0,10), style: TextStyle(color: Colors.white70, fontSize: 14)),
+                
+                if(userzzz.username.length <=10)  Text(userzzz.name, style: TextStyle(color: Colors.white70, fontSize: 14))
+                  
               ],
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete_forever),
+            onPressed: () {
+              // Confirm clearing all messages
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Clear All Messages"),
+                    content: const Text("Are you sure you want to clear all messages?"),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text("Cancel"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        child: const Text("Clear"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _clearAllMessages();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _fetchMessages,
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -183,11 +260,14 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: <Widget>[
                 CircleAvatar(
-                  backgroundImage:
-                      NetworkImage('https://via.placeholder.com/150'),
+                  backgroundImage: NetworkImage('https://via.placeholder.com/150'),
                 ),
                 SizedBox(width: 10),
-                Text("Dr. John", style: TextStyle(fontSize: 16)),
+                     if(userzzz.occupation != null&&userzzz.occupation == 'Doc') Text("Patient", style: TextStyle(fontSize: 16)),
+                     if(userzzz.occupation !=null&&userzzz.occupation == 'Pat') Text("Doctor", style: TextStyle(fontSize: 16)),
+                     if(userzzz.occupation ==null)  Text("Doctor", style: TextStyle(fontSize: 16)),
+                    //  if(userzzz.occupation !=null)  Text("Patient", style: TextStyle(fontSize: 16)),
+                // Text(widget.Namee!, style: TextStyle(fontSize: 16)),
                 Spacer(),
                 IconButton(
                   icon: Icon(Icons.refresh),
@@ -204,16 +284,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 controller: _scrollController,
                 itemCount: messages.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(messages[index]),
+                  return MessageBubble(
+                    text: messages[index]['message'],
+                    isSentByMe: messages[index]['sender'] == widget.occupation,
+                    timestamp: messages[index]['timestamp'],
+                    check: messages[index]['chat'],
                   );
                 },
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10.0),
@@ -227,10 +309,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.attach_file, color: Colors.blue),
-                  onPressed: onAttachButtonPressed,
-                ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -242,43 +320,84 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 IconButton(
                   icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: onSendButtonPressed,
+                  onPressed: () {
+                    if (_messageController.text.isNotEmpty) {
+                      _chat(); // Call _chat only if there's a message to send
+                    }
+                  },
                 ),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: '',
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  final String text;
+  final bool isSentByMe;
+  final String timestamp;
+  final String check;
+
+  MessageBubble({
+    required this.text,
+    required this.isSentByMe,
+    required this.timestamp,
+    required this.check,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool ans;
+    // Determine crossAxisAlignment based on both isSentByMe and check
+    CrossAxisAlignment alignment;
+    if (check == 'fetch') {
+      if(isSentByMe){
+        alignment = CrossAxisAlignment.end;
+        ans=true;
+      } 
+      else {
+        alignment = CrossAxisAlignment.start;
+        ans=false;
+      }
+    } else {
+      alignment = CrossAxisAlignment.end;
+      ans = true;
+    }
+
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 4.0),
+          padding: const EdgeInsets.all(8.0),
+          decoration: BoxDecoration(
+            color: ans ? Colors.blue : Colors.grey[300],
+            borderRadius: BorderRadius.circular(10.0),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: '',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text, // No need to handle null case if text is required
+                style: TextStyle(
+                  color: ans ? Colors.white : Colors.black,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                timestamp, // No need to handle null case if timestamp is required
+                style: TextStyle(
+                  fontSize: 12,
+                  color: ans ? Colors.white70 : Colors.black54,
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: '',
-          ),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              onHomeButtonPressed();
-              break;
-            case 1:
-              onSettingsButtonPressed();
-              break;
-            case 2:
-              onMessagesButtonPressed();
-              break;
-          }
-        },
-      ),
+        ),
+      ],
     );
   }
 }

@@ -1,21 +1,36 @@
-// lib/screens/doctor_detail_screen.dart
-
+import 'dart:convert';
+import 'package:check/Sourish/services/doctor_info_store.dart';
+import 'package:http/http.dart' as http;
 import 'package:check/Sourish/Screens/doctor_model.dart';
 import 'package:check/Sourish/services/doctor_service.dart';
+import 'package:check/saumya/user_provider.dart';
+import 'package:check/unnati/ReportDetailDocPage.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class DoctorDetailScreen extends StatefulWidget {
   final Doctor doctor;
-  DoctorDetailScreen({required this.doctor});
+  final String? reportId;
+
+  DoctorDetailScreen({required this.doctor, this.reportId});
 
   @override
   _DoctorDetailScreenState createState() => _DoctorDetailScreenState();
 }
 
 class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _reviewController = TextEditingController();
-  double _rating = 0;
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.reportId != null) {
+      DoctorInfoStore.doctorInfoMap[widget.reportId!] = {
+        'doctorId': widget.doctor.staticId,
+        'doctorImageUrl': widget.doctor.profilePhotoUrl ?? 'default_url', // Provide a default URL
+        'doctorName': widget.doctor.name ?? 'Unknown', // Provide a default name
+      };
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +42,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(widget.doctor.name),
+              title: Text(widget.doctor.name ?? 'Doctor'),
               background: Container(
                 color: Colors.blue,
               ),
@@ -41,11 +56,11 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                 children: [
                   _buildProfileSection(),
                   SizedBox(height: 20),
-                  _buildInfoSection("Who Am I ?", widget.doctor.about),
+                  _buildInfoSection("Who Am I ?", widget.doctor.about ?? 'No information available'),
                   SizedBox(height: 20),
                   _buildQualificationSection(),
                   SizedBox(height: 20),
-                  _buildReviewsSection(),
+                  // _buildReviewsSection(),
                   SizedBox(height: 20),
                   _buildReviewForm(),
                 ],
@@ -63,7 +78,19 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
         CircleAvatar(
           radius: 40,
           backgroundColor: Colors.grey[300],
-          child: Icon(Icons.person, size: 40, color: Colors.grey[600]),
+          child: widget.doctor.profilePhotoUrl != null
+              ? ClipOval(
+                  child: Image.network(
+                    widget.doctor.profilePhotoUrl!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.person, size: 80, color: Colors.grey[600]);
+                    },
+                  ),
+                )
+              : Icon(Icons.person, size: 80, color: Colors.grey[600]),
         ),
         SizedBox(width: 16),
         Expanded(
@@ -71,14 +98,20 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.doctor.name,
+                widget.doctor.name ?? 'Unknown',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              Text('@${widget.doctor.name.toLowerCase().replaceAll(' ', '')}'),
+              Text('@${widget.doctor.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}'),
               Row(
                 children: [
                   Icon(Icons.star, color: Colors.amber, size: 16),
-                  Text(' ${widget.doctor.rating} • ${widget.doctor.address}'),
+                  SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      '${widget.doctor.rating ?? 'N/A'} • ${widget.doctor.address ?? 'No address'}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -111,231 +144,91 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
-        Text("• ${widget.doctor.description}"),
+        Text("• ${widget.doctor.description ?? 'No description'}"),
       ],
     );
   }
 
-  Widget _buildReviewsSection() {
-    return FutureBuilder<List<Review>>(
-      future: DoctorService().fetchReviews(widget.doctor.staticId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Text('No reviews yet.');
-        } else {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Reviews",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  Widget _buildReviewForm() {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+
+    Future<void> sendToDoctor(BuildContext context, String? imageStaticId, String doctorStaticId, String token) async {
+      print("Sending to doctor:");
+      print("Image Static ID: $imageStaticId");
+      print("Token: $token");
+      print("Doctor Static ID: $doctorStaticId");
+
+      try {
+        final response = await http.patch(
+          Uri.parse('http://51.20.3.117/api/images/post_images_to_doctor/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token $token',
+          },
+          body: jsonEncode({
+            'image_static_id': imageStaticId,
+            'doctor_id': doctorStaticId,
+          }),
+        );
+
+        print(response.body);
+
+        if (response.statusCode == 200) {
+          print('Details saved');
+
+          // Update the DoctorInfoStore with the new doctor info
+          if (imageStaticId != null) {
+            DoctorInfoStore.doctorInfoMap[imageStaticId] = {
+              'doctorId': doctorStaticId,
+              'doctorImageUrl': widget.doctor.profilePhotoUrl ?? 'default_url',
+              'doctorName': widget.doctor.name ?? 'Unknown',
+            };
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReportDetailDocPage(
+                reportStaticId: imageStaticId!,
+                token: token,
+                doctorId: doctorStaticId,
+                doctorImageUrl: widget.doctor.profilePhotoUrl,
+                doctorName: widget.doctor.name,
               ),
-              SizedBox(height: 8),
-              ...snapshot.data!.map((review) => _buildReviewItem(review)).toList(),
-            ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save details: ${response.statusCode}')),
           );
         }
-      },
-    );
-  }
+      } catch (e) {
+        print('Error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An error occurred while sending details')),
+        );
+      }
+    }
 
-  Widget _buildReviewItem(Review review) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(review.patient, style: TextStyle(fontWeight: FontWeight.bold)),
-                Spacer(),
-                Row(
-                  children: List.generate(5, (index) => Icon(
-                    index < review.rating ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
-                    size: 16,
-                  )),
-                ),
-              ],
-            ),
-            SizedBox(height: 4),
-            Text(review.comment),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReviewForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            "Write a Review",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          TextFormField(
-            controller: _reviewController,
-            decoration: InputDecoration(
-              hintText: "Enter your review here",
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter a review';
-              }
-              return null;
-            },
-          ),
-          SizedBox(height: 8),
-          Text("Rating:"),
-          Slider(
-            value: _rating,
-            min: 0,
-            max: 5,
-            divisions: 5,
-            label: _rating.round().toString(),
-            onChanged: (double value) {
-              setState(() {
-                _rating = value;
-              });
-            },
-          ),
-          SizedBox(height: 16),
           ElevatedButton(
-            onPressed: _submitReview,
-            child: Text('Submit Review'),
+            onPressed: () {
+              if (user != null) {
+                sendToDoctor(context, widget.reportId, widget.doctor.staticId, user.token);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User not found')),
+                );
+              }
+            },
+            child: Text('Send to Doctor'),
           ),
         ],
       ),
     );
   }
-
-  void _submitReview() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        final result = await DoctorService().submitReview(
-          widget.doctor.staticId,
-          'patient_id_here', // You need to implement a way to get the current patient's ID
-          _reviewController.text,
-          _rating.round(),
-        );
-        if (result) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Review submitted successfully')),
-          );
-          _reviewController.clear();
-          setState(() {
-            _rating = 0;
-          });
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit review: $e')),
-        );
-      }
-    }
-  }
 }
-
-
-
-
-// class DoctorDetailScreen extends StatelessWidget {
-//   final Doctor doctor;
-
-//   DoctorDetailScreen({required this.doctor});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(doctor.name),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16.0),
-//         child: SingleChildScrollView(
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Row(
-//                 children: [
-//                   CircleAvatar(
-//                     backgroundImage: NetworkImage('C:\Users\souri\OneDrive\Desktop\EEE\Other\PS1'), // Ensure you have imageUrl in the model or manage it accordingly.
-//                     radius: 30,
-//                   ),
-//                   SizedBox(width: 16),
-//                   Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         doctor.name,
-//                         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-//                       ),
-//                       // Text(doctor.sex == 'M' ? 'Male' : doctor.sex == 'F' ? 'Female' : 'Other'),
-//                       // Text('Age: ${doctor.age}'),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//               SizedBox(height: 16),
-//               Text(
-//                 'Who Am I?',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               SizedBox(height: 8),
-//               Text(doctor.about),
-//               SizedBox(height: 16),
-//               Text(
-//                 'My Qualification',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               SizedBox(height: 8),
-//               Text(doctor.description),
-//               SizedBox(height: 16),
-//               Text(
-//                 'Contact Information',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               SizedBox(height: 8),
-//               Text('Email: ${doctor.email}'),
-//               Text('Mobile: ${doctor.mobileNum}'),
-//               Text('Address: ${doctor.address}'),
-//               Text('Pincode: ${doctor.pincode}'),
-//               SizedBox(height: 16),
-//               Text(
-//                 'Reviews',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               SizedBox(height: 8),
-//               Row(
-//                 children: [
-//                   Icon(Icons.star, color: Colors.amber),
-//                   Text('${doctor.rating} out of 5'),
-//                 ],
-//               ),
-//               // Add reviews list here if necessary
-//               Spacer(),
-//               ElevatedButton(
-//                 onPressed: () {
-//                   // Handle button press
-//                 },
-//                 child: Text('Send to Doctor'),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }

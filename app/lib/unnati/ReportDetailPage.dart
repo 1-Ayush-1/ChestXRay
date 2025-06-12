@@ -1,3 +1,6 @@
+import 'package:check/Sourish/Screens/doctor_search_screen.dart';
+import 'package:check/nishkarsh/profileheader.dart';
+import 'package:check/nishkarsh/usermenu.dart';
 import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -57,6 +60,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     final user = userProvider.user;
 
     return Scaffold(
+      drawer: MenuDrawer(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : FutureBuilder<Map<String, dynamic>>(
@@ -80,47 +84,48 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                           padding: EdgeInsets.all(0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            
                             children: [
                               // User Info
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 40, horizontal: 16),
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(40),
-                                    color: Color(0xff4268b0)),
-                                width: 440,
-                                height: 125,
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 40,
-                                      backgroundImage:
-                                          user!.profilePhoto!.isNotEmpty
-                                              ? NetworkImage(user.profilePhoto!)
-                                              : const AssetImage(
-                                                      'assets/screen.png')
-                                                  as ImageProvider,
-                                    ),
-                                    // const SizedBox(width: 16.0),
-                                    SizedBox(width: 30),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Hello, ${user.name}!',
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            ProfileHeader(),  
+                              // Container(
+                              //   padding: const EdgeInsets.symmetric(
+                              //       vertical: 40, horizontal: 16),
+                              //   decoration: BoxDecoration(
+                              //       borderRadius: BorderRadius.circular(40),
+                              //       color: Color(0xff4268b0)),
+                              //   width: 440,
+                              //   height: 125,
+                              //   child: Row(
+                              //     children: [
+                              //       CircleAvatar(
+                              //         radius: 40,
+                              //         backgroundImage:
+                              //             user!.profilePhoto!.isNotEmpty
+                              //                 ? NetworkImage(user.profilePhoto!)
+                              //                 : const AssetImage(
+                              //                         'assets/screen.png')
+                              //                     as ImageProvider,
+                              //       ),
+                              //       // const SizedBox(width: 16.0),
+                              //       SizedBox(width: 30),
+                              //       Column(
+                              //         crossAxisAlignment:
+                              //             CrossAxisAlignment.start,
+                              //         children: [
+                              //           Text(
+                              //             'Hello, ${user.name}!',
+                              //             style: const TextStyle(
+                              //               fontSize: 24,
+                              //               fontWeight: FontWeight.bold,
+                              //               color: Colors.white,
+                              //             ),
+                              //           ),
+                              //         ],
+                              //       ),
+                              //     ],
+                              //   ),
+                              // ),
 
                               SizedBox(height: screenHeight * 0.03),
                               // Report Data
@@ -212,12 +217,14 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: () {
+                                    // Navigator.pushNamed(context, 'doctor_search/');
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => UpdateDoc(reportId: reportData.staticId, token: user.token,),
+                                        builder: (context) => SearchScreen(reportId: widget.reportStaticId,),
                                       ),
                                     );
+                                    
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Color(0xff4268b0),

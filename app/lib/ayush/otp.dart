@@ -17,11 +17,14 @@ class _MyOtpState extends State<MyOtp> {
   bool isLoading = false;
   String _verificationId = "";
   int? _resendToken;
+  String mobilenum = "";
 
   @override
   void initState() {
     super.initState();
     _verificationId = widget.verificationId;
+    mobilenum = widget.phoneNumber;
+
   }
 
   Future<bool> resendOTP({required String phone}) async {
@@ -122,7 +125,7 @@ class _MyOtpState extends State<MyOtp> {
 
                       await FirebaseAuth.instance.signInWithCredential(credential).then((value) async {
                         await Future.delayed(const Duration(seconds: 2)); // Introduce a delay
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const Verify()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) =>  Verify(num: mobilenum,)));
                       });
                     } catch (ex) {
                       print(ex.toString());

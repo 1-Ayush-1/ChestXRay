@@ -44,7 +44,7 @@ const AddDoctor = () => {
     formData.append('profile_photo', doctor.profile_photo); // Append the file object
 
     try {
-      const response = await axios.post('http://51.20.3.117/users/add-doc/', formData, {
+      const response = await axios.post('http://51.20.3.117/api/users/add-doc/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data', // Important to set this header for file uploads
         },

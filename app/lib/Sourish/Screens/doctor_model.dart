@@ -52,3 +52,48 @@ factory Doctor.fromJson(Map<String, dynamic> json) {
 }
   
 }
+/*
+
+
+Future<void> sendtodoctor(BuildContext context, String image_static_id, String doctor_static_id, String random) async {
+  final response = await http.patch(
+    Uri.parse('http://51.20.3.117/api/images/post_images_to_doctor/'),
+    headers: {
+      'Content-Type': 'application/json',
+        // 'Accept': 'application/x-www-form-urlencoded',
+      'Authorization': 'Token $random'
+    },
+    body: jsonEncode({
+      'image_static_id' : image_static_id,
+      'doctor_static_id': doctor_static_id,
+    }),
+  );
+
+
+  print(response.body);
+  if (response.statusCode == 200) {
+    // print('badiya hai');
+    print('Details saved');
+    Navigator.pushNamed(context, 'post_doctor/');
+  } 
+  else if (response.statusCode == 400) {
+    // Show a snackbar with the message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('User with this mobile number already exists. Please verify with another number.'),
+      ),
+    ).closed.then((reason) {
+      // After Snackbar is closed, navigate to 'Postpatient_Container/'
+      Navigator.pushNamed(context, 'patient_profile/');
+    });
+  } else {
+    // Handle other status codes or throw an exception as needed
+    print(response.statusCode);
+    print('Failed to save user details: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to save user details: ${response.statusCode}');
+  }
+  // Navigator.pushNamed(context, 'patient_profile/');
+}
+
+*/

@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'package:check/nishkarsh/profileheader.dart';
+import 'package:check/nishkarsh/usermenu.dart';
 import 'package:check/saumya/user_provider.dart';
+import 'package:check/vaibhav/chat.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+
 import 'api_service.dart';
 import 'image_model_doc.dart';
-import 'package:check/vaibhav/chat.dart'; // Import your ChatScreen
 
 class UpdateDoc extends StatefulWidget {
   final String? reportId;
@@ -25,6 +30,62 @@ class _UpdateDocState extends State<UpdateDoc> {
   void initState() {
     super.initState();
     fetchData();
+  }
+
+  Future<void> create_chat(String occupation) async {
+    String url = 'http://51.20.3.117/api/chat/create_chat/';
+    occupation = 'doctor';  
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Token ${widget.token}',
+        },
+        body: jsonEncode({
+          'static_id': widget.reportId
+        }),
+      );
+
+      Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+      String chatStaticId = jsonResponse['static_id'];
+
+      if (response.statusCode == 201) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ChatScreen(
+                  token: widget.token,
+                  chatStaticId: chatStaticId,
+                  occupation: occupation,
+                ),
+          ),
+        );
+      } else {
+        print('Failed to send. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error during sending message: $e');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Failed to connect to the server. Please check your connection."),
+            actions: <Widget>[
+              TextButton(
+                child: const Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> fetchData() async {
@@ -52,9 +113,8 @@ class _UpdateDocState extends State<UpdateDoc> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Comments updated successfully')),
       );
-      // Fetch updated report data after comment update
       _futureReportData = ApiService().fetchReportDocData(widget.reportId!);
-      setState(() {}); // Trigger a rebuild to update the UI with new comments
+      setState(() {});
     } catch (e) {
       print('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,216 +126,132 @@ class _UpdateDocState extends State<UpdateDoc> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final userzzz = userProvider.user;
+    String occupation;
+    if (userzzz!.occupation == 'Doc')
+      occupation = "doctor";
+    else
+      occupation = 'patient';
 
-    // Accessing user data from UserProvider
-    final user = userProvider.user;
     return GestureDetector(
       onTap: () {
-        // Dismiss keyboard when tapping anywhere on the screen
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: Size.fromHeight(120.0), // Adjust height as needed
-          child: AppBar(
-            backgroundColor: Color(0xff4268b0),
-            title: FutureBuilder<Map<String, dynamic>>(
-              future: _futureUserData,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (snapshot.hasData) {
-                  final userData = snapshot.data!;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: (user!.profilePhoto) != null
-                              ? NetworkImage(user.profilePhoto!)
-                              : AssetImage('assets/screen.png') as ImageProvider,
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Hello, ${user!.name}!',
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  return Container();
-                }
-              },
-            ),
-          ),
-        ),
-
+        drawer: MenuDrawer(),
         body: isLoading
             ? Center(child: CircularProgressIndicator())
-            : FutureBuilder<ImageDocData>(
-                future: _futureReportData,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (snapshot.hasData) {
-                    final reportData = snapshot.data!;
-                    // _commentsController.text = reportData.doctorComments ?? 'No comments';
-
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Original Image and 'Your Image' row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              reportData.originalImage != null
-                                  ? Image.network(
-                                      reportData.originalImage!,
-                                      width: 150,
-                                      height: 150,
-                                      errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) =>
-                                          Image.asset('assets/screen.png'),
-                                    )
-                                  : Image.asset('assets/screen.png'),
-                              SizedBox(width: 20),
-                              Text('Your Image', style: TextStyle(fontSize: 16)),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          // AI Image and AI Text row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              reportData.aiImage != null
-                                  ? Image.network(
-                                      reportData.aiImage!,
-                                      width: 150,
-                                      height: 150,
-                                      errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) =>
-                                          Image.asset('assets/screen.png'),
-                                    )
-                                  : Image.asset('assets/screen.png'),
-                              SizedBox(width: 20),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                      reportData.aiImage != null
-                                          ? Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text('AI Image',
-                                                    style: TextStyle(
-                                                        fontSize: 16)),
-                                                SizedBox(height: 10),
-                                                Text(reportData.aiText ??
-                                                    ''), // Show AI text if available, otherwise show an empty string
-                                              ],
-                                            )
-                                          : const Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text('AI Image',
-                                                    style: TextStyle(
-                                                        fontSize: 16)),
-                                                SizedBox(height: 10),
-                                                Text(
-                                                    ""), // Empty text widget if AI image is null
-                                              ],
-                                            ),
-                                    ],
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          // Doctor's Comments
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Container(
-                                padding: EdgeInsets.all(12.0),
-                                color: Colors.lightBlue[100],
-                                child: Column(
+            : SingleChildScrollView(
+                child: FutureBuilder<ImageDocData>(
+                  future: _futureReportData,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (snapshot.hasData) {
+                      final reportData = snapshot.data!;
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ProfileHeader(),
+                            // Display profile header, original image, AI image, doctor's comments, and chat button
+                            SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                reportData.originalImage != null
+                                    ? Image.network(
+                                        reportData.originalImage!,
+                                        width: 150,
+                                        height: 150,
+                                        errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) =>
+                                            Image.asset('assets/screen.png'),
+                                      )
+                                    : Image.asset('assets/screen.png'),
+                                SizedBox(width: 20),
+                                Text('Your Image', style: TextStyle(fontSize: 16)),
+                              ],
+                            ),
+                            SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                reportData.aiImage != null
+                                    ? Image.network(
+                                        reportData.aiImage!,
+                                        width: 150,
+                                        height: 150,
+                                        errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) =>
+                                            Image.asset('assets/screen.png'),
+                                      )
+                                    : Image.asset('assets/screen.png'),
+                                SizedBox(width: 20),
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'Doctor\'s Comments',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black),
-                                    ),
-                                    SizedBox(height: 8),
-                                    TextField(
-                                      controller: _commentsController,
-                                      maxLines: 9,
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        hintText: 'Enter your comments here...',
-                                      ),
-                                    ),
-                                    SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            try {
-                                              await updateDoctorComments();
-                                            } catch (e) {
-                                              print('Error updating comments: $e');
-                                            }
-                                          },
-                                          child: Text('Submit'),
-                                        ),
-                                        SizedBox(width: 120),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(builder: (context) => ChatScreen()),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue, // Change button color to blue
-                                          ),
-                                          child: Text('Chat with doctor'),
-                                        ),
-                                      ],
-                                    ),
+                                    Text('AI Image', style: TextStyle(fontSize: 16)),
+                                    SizedBox(height: 10),
+                                    Text(reportData.aiText ?? ''), // Show AI text if available
                                   ],
                                 ),
+                              ],
+                            ),
+                            SizedBox(height: 20),
+                            Text(
+                              'Doctor\'s Comments',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else {
-                    return Center(child: Text('No report available'));
-                  }
-                },
+                            SizedBox(height: 8),
+                            TextField(
+                              controller: _commentsController,
+                              maxLines: 9,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Color.fromARGB(255, 182, 211, 235),
+                                border: OutlineInputBorder(),
+                                hintText: 'Enter your comments here...',
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    try {
+                                      await updateDoctorComments();
+                                    } catch (e) {
+                                      print('Error updating comments: $e');
+                                    }
+                                  },
+                                  child: Text('Submit'),
+                                ),
+                                SizedBox(width: 60),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    create_chat(occupation);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                  ),
+                                  child: Text('Chat with Patient'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Center(child: Text('No report available'));
+                    }
+                  },
+                ),
               ),
       ),
     );

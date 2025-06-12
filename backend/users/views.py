@@ -36,7 +36,7 @@ def doctor_patients_images_view(request):
         doctor = get_object_or_404(Doctor, auth_user=request.user)
 
         # Retrieve all images associated with the doctor
-        images = Image.objects.filter(doctor=doctor)
+        images = Image.objects.filter(doctor=doctor, doctor_comments="No Comments")
 
         # Extract patient names and original images
         patients_images_data = []
@@ -623,7 +623,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class DoctorProfileUpdate(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    
 
     def patch(self, request):
         user = request.user

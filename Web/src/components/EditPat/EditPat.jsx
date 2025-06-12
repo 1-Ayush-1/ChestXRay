@@ -9,7 +9,7 @@ const EditPat = () => {
   const navigate = useNavigate();
 
   const fetchPatientDetails = useCallback(() => {
-    axios.get(`http://51.20.3.117/users/get-pat/${userId}`)
+    axios.get(`http://51.20.3.117/api/users/get-pat/${userId}`)
       .then(response => {
         if (response.data.success) {
           setPatient(response.data.patient);
@@ -30,7 +30,7 @@ const EditPat = () => {
   };
 
   const handleSave = () => {
-    axios.put(`http://51.20.3.117/users/update-pat/${userId}`, patient)
+    axios.put(`http://51.20.3.117/api/users/update-pat/${userId}`, patient)
       .then(() => {
         navigate('/Home/ViewP');
       })

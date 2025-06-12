@@ -1,19 +1,25 @@
+import 'package:check/Sourish/services/doctor_info_store.dart';
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 
 class MessageContainer extends StatefulWidget {
-  final String doctorId;
-  final String doctorName;
-  final String doctorImageUrl;
+  final String? doctorId;
+  final String? doctorName;
+  final String? doctorImageUrl;
+  final String token;
+  final String reportStaticId;
 
-  const MessageContainer({
+  MessageContainer({
     Key? key,
-    required this.doctorId,
-    required this.doctorName,
-    required this.doctorImageUrl,
+    this.doctorId,
+    this.doctorName,
+    this.doctorImageUrl,
+    required this.token,
+    required this.reportStaticId,
   }) : super(key: key);
 
   @override
@@ -24,187 +30,228 @@ class _MessageContainerState extends State<MessageContainer> {
   final TextEditingController _feedbackController = TextEditingController();
   double _rating = 0;
 
-  Future<void> _submitReview() async {
-    final String apiUrl = 'https://your-backend-url.com/api/submit_review/';
-    final String token = 'your_auth_token_here'; // Replace with actual token
+  Future<void> _submitReview(String randomId) async {
+    final String apiUrl = 'http://51.20.3.117/api/reviews/create_review/';
+    final doctorInfo = DoctorInfoStore.doctorInfoMap[widget.reportStaticId];
+
+    if (doctorInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Doctor information not found')),
+      );
+      return;
+    }
 
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Token $token',
+          'Authorization': 'Token ${widget.token}',
         },
         body: jsonEncode({
-          'doctor_id': widget.doctorId,
-          'review_text': _feedbackController.text,
-          'rating': _rating,
+          'static_id': widget.reportStaticId,
+          'patient': randomId,
+          'doctor': doctorInfo['doctorId'] ?? '', // Provide a default value if null
+          'review_comment': _feedbackController.text,
+          'rating_stars': _rating.toInt(),
         }),
       );
 
       if (response.statusCode == 201) {
-        // Review submitted successfully
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Review submitted successfully')),
         );
       } else {
-        // Error submitting review
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error submitting review')),
+          SnackBar(content: Text('Error submitting review: ${response.body}')),
         );
       }
     } catch (e) {
-      print('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred')),
+        SnackBar(content: Text('An error occurred: $e')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return 
-    Scaffold(
-        appBar: AppBar(
-          backgroundColor: Color(0xff4268b0),
-          elevation: 2,
-        ),
-        bottomNavigationBar: GNav(
-          activeColor: Color(0xff4268b0),
-          tabs: const [
-            GButton(icon: Icons.home),
-            GButton(icon: Icons.settings),
-            GButton(icon: Icons.logout),
-          ],
-        ),
-        // bottomNavigationBar: BottomNavigationBar(
-        //   backgroundColor: Color(0xff4268b0),
-        //   items: [
-        //     BottomNavigationBarItem(icon: Icon(Icons.home)),
-        //     BottomNavigationBarItem(icon: Icon(Icons.settings)),
-        //     BottomNavigationBarItem(icon: Icon(Icons.logout)),
-        //   ],
-        // ),
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
 
-        backgroundColor: Colors.white,
-        body: 
-    
-    
-    Container(
-      child: Column(
-        children: [
-          SizedBox(height: 10),
-          Row(
-            children: [
-              SizedBox(width: 4),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  'Back',
-                  style: TextStyle(fontSize: 14, color: Color(0xff4268b0)),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xff4268b0),
+        elevation: 2,
+      ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Back',
+                          style: TextStyle(fontSize: 14, color: Color(0xff4268b0)),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Column(
+                        children: [
+                          ClipOval(
+                            child: widget.doctorImageUrl != null
+                                ? Image.network(
+                                    widget.doctorImageUrl!,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/doctor.jpeg',
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  )
+                                : Image.asset(
+                                    'assets/doctor.jpeg',
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            widget.doctorName ?? 'Doctor',
+                            style: TextStyle(fontSize: 24, color: Color(0xff4268b0)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(width: 85),
-              Text(widget.doctorName,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 24, color: Color(0xff4268b0))),
-            ],
-          ),
-          SizedBox(height: 4),
-          ClipOval(
-            child: Image.network(
-              widget.doctorImageUrl,
-              width: 90,
-              height: 90,
-              fit: BoxFit.cover,
-            ),
-          ),
-          SizedBox(height: 40),
-          Container(
-            height: 181,
-            width: 349,
-            decoration: BoxDecoration(
-              color: Color(0xffcde2f5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: TextField(
-              controller: _feedbackController,
-              scrollPadding: EdgeInsets.all(10),
-              decoration: InputDecoration(
-                hintText: 'Please provide your valuable feedback',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              style: TextStyle(color: Colors.grey, fontSize: 18),
-            ),
-          ),
-          SizedBox(height: 10),
-          Center(
-            child: Container(
-              child: Text('Rate the doctor',
-                  style: TextStyle(fontSize: 18, color: Color(0xff4268b0))),
-            ),
-          ),
-          SizedBox(height: 5),
-          Center(
-            child: RatingBar.builder(
-              initialRating: 0,
-              minRating: 1,
-              direction: Axis.horizontal,
-              allowHalfRating: true,
-              itemCount: 5,
-              itemPadding: EdgeInsets.symmetric(horizontal: 4),
-              itemBuilder: (context, _) => Icon(
-                Icons.star,
-                color: Color(0xff4268b0),
-              ),
-              onRatingUpdate: (rating) {
-                setState(() {
-                  _rating = rating;
-                });
-              },
-            ),
-          ),
-          SizedBox(height: 20),
-          Center(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                color: Color(0xff4268b0),
-              ),
-              width: 266,
-              height: 51,
-              child: TextButton(
-                onPressed: _submitReview,
-                child: Text(
-                  'Submit',
-                  style: TextStyle(fontSize: 12, color: Colors.white),
+                SizedBox(height: 40),
+                Container(
+                  height: 181,
+                  width: 349,
+                  decoration: BoxDecoration(
+                    color: Color(0xffcde2f5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: _feedbackController,
+                    scrollPadding: EdgeInsets.all(10),
+                    decoration: InputDecoration(
+                      hintText: 'Please provide your valuable feedback',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    style: TextStyle(color: Colors.grey, fontSize: 18),
+                  ),
                 ),
-              ),
+                SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    'Rate the doctor',
+                    style: TextStyle(fontSize: 18, color: Color(0xff4268b0)),
+                  ),
+                ),
+                SizedBox(height: 5),
+                Center(
+                  child: RatingBar.builder(
+                    initialRating: 0,
+                    minRating: 1,
+                    direction: Axis.horizontal,
+                    allowHalfRating: true,
+                    itemCount: 5,
+                    itemPadding: EdgeInsets.symmetric(horizontal: 4),
+                    itemBuilder: (context, _) => Icon(
+                      Icons.star,
+                      color: Color(0xff4268b0),
+                    ),
+                    onRatingUpdate: (rating) {
+                      setState(() {
+                        _rating = rating;
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(height: 20),
+                Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      color: Color(0xff4268b0),
+                    ),
+                    width: 266,
+                    height: 51,
+                    child: TextButton(
+                      onPressed: () {
+                        if (user != null) {
+                          _submitReview(user.staticId);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('User not found')),
+                          );
+                        }
+                      },
+                      child: Text(
+                        'Submit',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Not Now',
+                      style: TextStyle(fontSize: 14, color: Color(0xff4268b0)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 10),
-          Center(
-            child: Container(
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  'Not Now',
-                  style: TextStyle(fontSize: 14, color: Color(0xff4268b0)),
-                ),
-              ),
-            ),
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
+        onTap: (int index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, 'patient_menu/');
+          }
+        },
+        currentIndex: 0,
+        selectedItemColor: Colors.blue,
       ),
-    ),
-    
     );
   }
 }

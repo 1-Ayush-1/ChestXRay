@@ -1,7 +1,9 @@
 import 'package:check/Sourish/Screens/doctor_detail_screen.dart';
 import 'package:check/Sourish/Screens/doctor_model.dart';
 import 'package:check/Sourish/Screens/doctor_search_screen.dart';
-import 'package:check/riya/message_container.dart';
+import 'package:check/riya/postdoctor.dart';
+// import 'package:check/riya/message_container.dart';
+import 'package:check/riya/postmessage.dart';
 import 'package:check/riya/postpatient.dart';
 import 'package:check/saumya/dummy.dart';
 import 'package:check/ayush/image.dart';
@@ -13,6 +15,8 @@ import 'package:check/ayush/test.dart';
 import 'package:check/ayush/phone.dart';
 import 'package:check/ayush/verify.dart';
 import 'package:check/tanish/patient_search.dart';
+import 'package:check/unnati/ReportDetailDocPage.dart';
+// import 'package:check/tanish/patient_search.dart';
 import 'package:check/unnati/main.dart';
 import 'package:check/vaibhav/chat.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -47,7 +51,15 @@ void main() async{
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    
+    // Accessing user data from UserProvider
+    final user = userProvider.user;
+    
+
     return MaterialApp(
+          // Accessing UserProvider instance
+      
       debugShowCheckedModeBanner: false,
       title: 'OTP Verification',
       theme: ThemeData(
@@ -69,13 +81,17 @@ class MyApp extends StatelessWidget {
           'upload_pic/': (context) => const ChooseImageScreen(),
           'showreport/': (context) => const ShowReport(),
           'nish_route/': (context) => const Uploader_nish(), //nishkarsh
-          'give_review/': (context) => const MessageContainer(),
-          'patient_profile/': (context) => Postpatient_Container(staticId: 'b2e48483-f91e-4e8c-bec2-e833b204f32a', token: '0399e7febfd5bbf32b51272d30a902592f766ec8'),
+          // 'give_review/': (context) => MessageContainer(doctorId: '', doctorName: '', doctorImageUrl: '', Token: user!.token,),//riya 
+          'patient_profile/': (context) => Postpatient_Container(staticId: user!.staticId,  Token: user.token),//riya
+          'post_doctor/' : (context) => Postdoctor_Container(staticId:user!.staticId , Token: user.token,),//riya
           'doctor_detail/': (context) => DoctorDetailScreen(doctor: ModalRoute.of(context)!.settings.arguments as Doctor),
           'doctor_search/': (context) => SearchScreen(),
-          'patient_search_screen/': (context) => PatientSearchScreen(),
           'chat_message/': (context) =>  ChatScreen(), //Vaibhav
+          'patient_search_screen/': (context) => PatientSearchScreen(token: '${user!.token}',),
+          // 'report_detail_doc/': (context) =>  ReportDetailDocPage(reportStaticId: '', token: user!.token,),
+          // 'profile_search/' : (context) =>  SearchScreen(), //sourish
       }
+      
     );
   }
 }

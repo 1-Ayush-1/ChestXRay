@@ -9,7 +9,7 @@ const EditDoc = () => {
   const navigate = useNavigate();
 
   const fetchDoctorDetails = useCallback(() => {
-    axios.get(`http://51.20.3.117/users/get-doc/${userId}`)
+    axios.get(`http://51.20.3.117/api/users/get-doc/${userId}`)
       .then(response => {
         if (response.data.success) {
           setDoctor(response.data.doctor);
@@ -30,7 +30,7 @@ const EditDoc = () => {
   };
 
   const handleSave = () => {
-    axios.put(`http://51.20.3.117/users/update-doc/${userId}`, doctor)
+    axios.put(`http://51.20.3.117/api/users/update-doc/${userId}`, doctor)
       .then(() => {
         navigate('/Home/ViewD');
       })

@@ -12,7 +12,7 @@ const ViewDoctors = () => {
   }, []);
 
   const fetchDoctors = () => {
-    axios.get('http://51.20.3.117/users/doctor-view/')
+    axios.get('http://51.20.3.117/api/users/doctor-view/')
       .then(response => {
         if (response.data.success && Array.isArray(response.data.doctors)) {
           setDoctors(response.data.doctors);
@@ -25,7 +25,7 @@ const ViewDoctors = () => {
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete the doctor's license?")) {
-      axios.delete(`http://51.20.3.117/users/delete-doc/${id}`)
+      axios.delete(`http://51.20.3.117/api/users/delete-doc/${id}`)
         .then(() => fetchDoctors())
         .catch(error => console.error('Error deleting doctor:', error));
     }

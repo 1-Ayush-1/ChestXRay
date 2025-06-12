@@ -14,7 +14,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    
+    // String name;
     // Accessing user data from UserProvider
     final user = userProvider.user;
     
@@ -36,7 +36,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             child: CircleAvatar(
               radius: 30,
               backgroundImage: user!.profilePhoto != null
-                ? NetworkImage(user.profilePhoto!)
+                ? NetworkImage(user.profilePhoto!) 
                 : AssetImage('assets/user.jpg'), // Use a placeholder image asset
               ),
             // child: const CircleAvatar(
@@ -50,9 +50,12 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                  
+              // name = user.username,
+              // name = name.substring(1,14),
               Text(
-                '${user!.username}',
+                (user.username.length >= 14)
+                  ? user.username.substring(0, 14)
+                  : user.username , // Display username or empty string if null
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
               Text(

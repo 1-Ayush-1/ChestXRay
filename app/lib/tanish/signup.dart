@@ -3,30 +3,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 
 // Import your LoginPage
 import '../saumya/login_page.dart';
 
-void main() {
-  runApp(const MyApp());
-}
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const SignUpScreen(),
-    );
-  }
-}
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -48,26 +30,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+// String generateRandomNumber() {
+//   Random random = Random();
+//   int min = 1000000000; // 10-digit number starts from 1,000,000,000
+//   int max = 9999999999; // 10-digit number ends at 9,999,999,999
+//   int num = min + random.nextInt(max - min + 1);
+  
+//   return num.toString();
+// }
+
+//   void initState(){
+//     super.initState();
+//       generateRandomNumber();
+//   }
+
   Future<void> _signUp() async {
+    print(Random().nextInt(999)+100);
+    String mobileNumber = (Random().nextInt(999999)).toString();
     if (_formKey.currentState!.validate() && _termsAccepted) {
+      print(mobileNumber);
+      
       try {
         final response = await http.post(
-          Uri.parse('http://51.20.3.117/auth/signup/'),
+          Uri.parse('http://51.20.3.117/api/auth/signup/'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
+
+          
+
           body: jsonEncode(<String, String>{
             'username': _nameController.text,
             'email': _emailController.text,
             'password': _passwordController.text,
             'confirm_password': _confirmPasswordController.text,
-          }),
+            'mobile_num': mobileNumber,
+      }),
         );
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Sign up successful! Token: ${data['token']}')),
+            SnackBar(content: Text('Sign up successful!')),
           );
         } else {
           final data = jsonDecode(response.body);
@@ -249,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: _signUp,
+                  onPressed:()=> _signUp(),
                   child: const Text(
                     'Sign Up',
                   ),

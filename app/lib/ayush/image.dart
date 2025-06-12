@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -14,7 +15,7 @@ Future<UploadResponse> uploadImage(File image, String random, String Static_id) 
   try {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('http://51.20.3.117/images/upload_scan/'), // For Android Emulator
+      Uri.parse('http://51.20.3.117/api/images/upload_scan/'), // For Android Emulator
     );
     String patientStaticId = '$Static_id';
     //token : 7203e82f5db71e8baf6fddf08c80a24eb00be56d
@@ -60,6 +61,7 @@ class UploadResponse {
     return UploadResponse(
       message: json['message'] as String?,
     );
+    
   }
 }
 
@@ -220,18 +222,25 @@ class _UploaderState extends State<Uploader> {
   }
 
   FutureBuilder<UploadResponse> buildFutureBuilder() {
-    return FutureBuilder<UploadResponse>(
-      future: _futureResponse,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return Text(snapshot.data!.message ?? 'Your image has been added Sucessfully');
-        } else if (snapshot.hasError) {
-          return Text('${snapshot.error}');
-        }
-      
-        return const CircularProgressIndicator();
-      },
-    );
-  }
+  return FutureBuilder<UploadResponse>(
+    future: _futureResponse,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return CircularProgressIndicator();
+      } else if (snapshot.hasData) {
+        // Navigate after showing the success message
+        WidgetsBinding.instance!.addPostFrameCallback((_) {
+          Navigator.pushNamed(context, 'patient_menu/');
+        });
+        return Text(snapshot.data!.message ?? 'Your image has been added successfully');
+      } else if (snapshot.hasError) {
+        return Text('Error: ${snapshot.error}');
+      }
+
+      return CircularProgressIndicator(); // Handle other states if necessary
+    },
+  );
+}
+
 }
 

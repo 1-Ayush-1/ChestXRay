@@ -22,7 +22,7 @@ class ChatCreateView(APIView):
         doctor = image.doctor
         try:
 
-            chat = Chat.objects.create(image = image, patient = patient, doctor = doctor)
+            chat,create = Chat.objects.get_or_create(image = image, patient = patient, doctor = doctor)
         except Exception as e:
             return Response({"message" : str(e)}, status=status.HTTP_400_BAD_REQUEST)
         serializer = ChatSerializer(chat)
@@ -36,7 +36,7 @@ class MessageCreateView(APIView):
         serializer = MessageSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message":"YAYYYYY", "data" : serializer.data}, status = status.HTTP_201_CREATED)
+            return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 

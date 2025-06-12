@@ -17,7 +17,7 @@ const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-const response =await axios.post('http://51.20.3.117/auth/staff-login/',
+const response =await axios.post('http://51.20.3.117/api/auth/staff-login/',
 {
     UserName: username,
     UserPassword: password,

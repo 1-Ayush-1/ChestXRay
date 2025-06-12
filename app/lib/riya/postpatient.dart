@@ -1,22 +1,28 @@
 import 'package:check/riya/usermodel.dart';
+import 'package:check/saumya/user_provider.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+// import 'package:myapp/usermodel.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
+// import 'package:check/saumya/user_provider.dart';
 
 class ApiService {
-  final String baseUrl = 'http://51.20.3.117/';
+  final String baseUrl = 'http://51.20.3.117/api/';
   final String? token;
   ApiService({required this.token});
 
-  Future<Map<String, dynamic>> getUserData(String staticId) async {
+  Future<Map<String, dynamic>> getUserData(String staticId, String randomtoken) async {
     {
-      var url = Uri.parse('http://51.20.3.117/users/user_details/');
-      http.Response response = await http.get(url, headers: {
-        'Authorization': 'Token 0399e7febfd5bbf32b51272d30a902592f766ec8'
-      });
+      var url = Uri.parse('http://51.20.3.117/api/users/user_details/');
+      http.Response response =
+          await http.get(url, headers: {'Authorization': 'Token $randomtoken'});
 
       try {
         if (response.statusCode == 200) {
@@ -32,11 +38,11 @@ class ApiService {
     }
   }
 
-  Future<String> uploadProfilePicture(File imageFile, String staticId) async {
+  Future<String> uploadProfilePicture(
+      File imageFile, String staticId, String randomtoken) async {
     var request = http.MultipartRequest(
-        'PATCH', Uri.parse('http://51.20.3.117/users/patient_profile/'));
-    request.headers['Authorization'] =
-        'Token 0399e7febfd5bbf32b51272d30a902592f766ec8';
+        'PATCH', Uri.parse('http://51.20.3.117/api/users/patient_profile/'));
+    request.headers['Authorization'] = 'Token $randomtoken';
     request.files
         .add(await http.MultipartFile.fromPath('image', imageFile.path));
 
@@ -50,45 +56,47 @@ class ApiService {
       throw Exception('Failed to upload profile picture');
     }
   }
-
-  Future<void> saveUserDetails(Map<String, dynamic> userData) async {
+  //print(userData);
+  Future<void> saveUserDetails(
+      Map<String, dynamic> userData, String randomtoken) async {
     print(userData.toString());
     final response = await http.patch(
-      Uri.parse('http://51.20.3.117/users/patient_profile/'),
+      Uri.parse('http://51.20.3.117/api/users/patient_profile/'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Token 0399e7febfd5bbf32b51272d30a902592f766ec8'
+        'Accept': 'application/json',
+        'Authorization': 'Token $randomtoken'
       },
-      body: userData,
+      body: jsonEncode(userData),
     );
     if (response.statusCode == 200) {
       print('Details saved');
     } else {
       print(response.statusCode);
-      throw Exception('Failed to save user details: ${response.statusCode}');
+      throw Exception(response.body);
     }
   }
 }
 
 class Postpatient_Container extends StatefulWidget {
   final String staticId;
-  final String token;
+  final String Token;
 
   const Postpatient_Container(
-      {Key? key, required this.staticId, required this.token})
+      {Key? key, required this.staticId, required this.Token})
       : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _Postpatient_ContainerState createState() => _Postpatient_ContainerState();
 }
 
 class _Postpatient_ContainerState extends State<Postpatient_Container> {
+  bool isVerified = false;
   late Future<User> _userFuture;
   late ApiService _apiService;
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _mobileNumberController;
+  // late TextEditingController _mobileNumberController;
   late TextEditingController _dateOfBirthController;
   late TextEditingController _medicationController;
   late TextEditingController _ageController;
@@ -96,34 +104,31 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
   late TextEditingController _heightController;
   late TextEditingController _addressController;
   late TextEditingController _pincodeController;
-  
-  
+  String _selectedsex = '';
 
-/////////////////////////////////////AYUSH
-  // File? _imageFile;
-  // const primary = Color(0xff4268b0);
-  //   final userData = await _apiService.getUserData(widget.staticId);
-  //   return User.fromJson(userData);
-  // }
-/////////////////////////////////////
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
-    _apiService = ApiService(token: widget.token);
+    _apiService = ApiService(token: widget.Token);
     _userFuture = _fetchUserData();
+
     _initControllers();
   }
 
-    Future<User> _fetchUserData() async {
-    final userData = await _apiService.getUserData(widget.staticId);
-    return User.fromJson(userData);
+  Future<User> _fetchUserData() async {
+    final userData =
+        await _apiService.getUserData(widget.staticId, widget.Token);
+        _currentUser = User.fromJson(userData);
+    _initializeTextControllers(_currentUser!);
+    return _currentUser!;
   }
-  ////////////////////////////////////////////////
+
   void _initControllers() {
-    _mobileNumberController = TextEditingController(text: '');
+    // _mobileNumberController = TextEditingController(text: '');
     _dateOfBirthController = TextEditingController(text: '');
     _medicationController = TextEditingController(text: '');
     _ageController = TextEditingController(text: '');
@@ -135,7 +140,7 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
 
   @override
   void dispose() {
-    _mobileNumberController.dispose();
+    // _mobileNumberController.dispose();
     _dateOfBirthController.dispose();
     _medicationController.dispose();
     _ageController.dispose();
@@ -159,8 +164,8 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
   Future<void> _uploadProfilePicture(User user) async {
     if (_imageFile != null) {
       try {
-        final imageUrl =
-            await _apiService.uploadProfilePicture(_imageFile!, user.staticId!);
+        final imageUrl = await _apiService.uploadProfilePicture(
+            _imageFile!, user.staticId!, widget.Token);
         setState(() {
           user.profilePhoto = imageUrl;
         });
@@ -177,7 +182,7 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
 
   Future<void> _saveUserDetails(User user) async {
     if (_formKey.currentState!.validate()) {
-      user.mobileNum = _mobileNumberController.text;
+      // user.mobileNum = _mobileNumberController.text;
       user.dob = _dateOfBirthController.text;
       user.medication = _medicationController.text;
       user.weight = _weightController.text.isNotEmpty
@@ -187,20 +192,38 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
           ? int.parse(_heightController.text)
           : null;
       user.address = _addressController.text;
+      user.age = _ageController.text.isNotEmpty
+          ? int.parse(_ageController.text)
+          : null;
       user.pincode = _pincodeController.text;
+      user.sex = _selectedsex;
+
       if (_imageFile != null) {
         await _uploadProfilePicture(user);
       }
       try {
-        await _apiService.saveUserDetails(user.toJson());
+        await _apiService.saveUserDetails(user.toJson(), widget.Token);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('User details saved successfully')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save user details xyz')),
+          SnackBar(content: Text(e.toString())),
         );
       }
+    }
+  }
+  void _calculateAndSetAge() {
+    if (_dateOfBirthController.text.isNotEmpty) {
+      DateTime dob =
+          DateFormat('yyyy-MM-dd').parse(_dateOfBirthController.text);
+      DateTime today = DateTime.now();
+      int age = today.year - dob.year;
+      if (today.month < dob.month ||
+          (today.month == dob.month && today.day < dob.day)) {
+        age--;
+      }
+      _ageController.text = age.toString();
     }
   }
 
@@ -224,18 +247,19 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
   }
 
   void _initializeTextControllers(User user) {
-    _mobileNumberController.text = user.mobileNum ?? '';
+    // _mobileNumberController.text = user.mobileNum ?? '';
     _dateOfBirthController.text = user.dob ?? '';
     _medicationController.text = user.medication ?? '';
     _weightController.text = user.weight != null ? user.weight.toString() : '';
     _heightController.text = user.height != null ? user.height.toString() : '';
     _addressController.text = user.address ?? '';
     _pincodeController.text = user.pincode ?? '';
+    _ageController.text = user.age != null ? user.age.toString() : '';
+    _selectedsex = user.sex ?? '';
   }
 
   Widget _buildUserForm(User user) {
-    return 
-      Scaffold(
+    return Scaffold(
         appBar: AppBar(
           backgroundColor: Color(0xff4268b0),
           elevation: 2,
@@ -248,86 +272,133 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
             GButton(icon: Icons.logout),
           ],
         ),
-        // bottomNavigationBar: BottomNavigationBar(
-        //   backgroundColor: Color(0xff4268b0),
-        //   items: [
-        //     BottomNavigationBarItem(icon: Icon(Icons.home)),
-        //     BottomNavigationBarItem(icon: Icon(Icons.settings)),
-        //     BottomNavigationBarItem(icon: Icon(Icons.logout)),
-        //   ],
-        // ),
-
+       
         backgroundColor: Colors.white,
-        body:
-
-  
-      
-    Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: [
-                // User info section (name, email, ID)
-                _buildUserInfo(user),
-                _build3TextField(
-                    _mobileNumberController, 'Mobile number', 'Mobile number'),
-                _buildTextField(
-                    _dateOfBirthController, 'Date of Birth', 'Date of Birth'),
-                _buildTextField(_ageController, 'Age', 'Age'),
-                _build2TextField(
-                    _medicationController, 'Medication', 'Medication'),
-                _buildTextField(_weightController, 'Weight', 'Weight'),
-                _buildTextField(_heightController, 'Height', 'Height'),
-                _buildTextField(_addressController, 'Address', 'Address'),
-                _buildTextField(_pincodeController, 'Pincode', 'Pincode'),
-                SizedBox(
-                  height: 20,
-                ),
-                // Save and Back buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        body: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Color(0xff4268b0)),
-                      width: 150,
-                      height: 32,
-                      child: TextButton(
-                        onPressed: () => _saveUserDetails(user),
-                        child: Text(
-                          'Save',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ),
+                    // User info section (name, email, ID)
+                    _buildUserInfo(user),
+                    _build3TextField('Mobile Number', ''),
+                    // _build3TextField(
+                    // _mobileNumberController, 'Mobile number', 'Mobile number'),
+                    _build4TextField(_dateOfBirthController, 'Date of Birth',
+                        'Date of Birth'),
+                    _buildTextField(_ageController, 'Age', 'Age'),
+                    _buildGenderSelection(user),
+                    _build2TextField(
+                        _medicationController, 'Medication', 'Medication'),
+                    _build5TextField(),
+                    _build6TextField(),
+                    _buildTextField(_addressController, 'Address', 'Address'),
+                    _buildTextField(_pincodeController, 'Pincode', 'Pincode'),
+
+                    SizedBox(
+                      height: 20,
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Color(0xff4268b0)),
-                      width: 150,
-                      height: 32,
-                      child: TextButton(
-                        onPressed: () {
-                          // Implement back functionality
-                          Navigator.pushNamed(context, 'patient_menu/');
-                        },
-                        child: Text(
-                          'Back',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
+                    // Save and Back buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Color(0xff4268b0)),
+                          width: 150,
+                          height: 32,
+                          child: TextButton(
+                            onPressed: () => _saveUserDetails(user),
+                            child: Text(
+                              'Save',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.white),
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Color(0xff4268b0)),
+                          width: 150,
+                          height: 32,
+                          child: TextButton(
+                            onPressed: () {
+                              // Implement back functionality
+                              Navigator.pushNamed(context, 'patient_menu/');
+                            },
+                            child: Text(
+                              'Back',
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-      ),
+        ));
+  }
+
+  Widget _build3TextField(String labelText, String hintText) {
+    
+    final userProvider = Provider.of<UserProvider>(context);
+    
+    // Accessing user data from UserProvider
+    final userzz = userProvider.user;
+
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Padding(padding: EdgeInsets.all(8)),
+            Container(
+              padding: const EdgeInsets.all(3),
+              alignment: Alignment.topLeft,
+              width: 240.0,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xffcde2f5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '${userzz!.mobileNumber}',
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+            ),
+            Padding(padding: EdgeInsets.all(6)),
+            Container(
+              alignment: Alignment.centerRight,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Color(0xff4268b0)),
+              width: 60,
+              height: 42,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, 'phone/');
+                },
+                child: Text(
+                  'Verify',
+                  style: TextStyle(fontSize: 12, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -366,16 +437,154 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
     );
   }
 
+  Widget _build5TextField() {
+    return Column(
+      children: [
+        Padding(padding: EdgeInsets.all(4)),
+        Container(
+          padding: EdgeInsets.all(3),
+          alignment: Alignment.topLeft,
+          width: 290.0,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Color(0xffcde2f5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextFormField(
+            controller: _heightController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter height';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              labelText: 'Height (inches)',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+              floatingLabelAlignment: FloatingLabelAlignment.start,
+            ),
+            style: TextStyle(color: Colors.grey, fontSize: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGenderSelection(User user) {
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 50.0, right: 10),
+          child: Text(
+            'Gender',
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
+        ),
+        Row(
+          children: <Widget>[
+            Radio(
+              value: 'M',
+              groupValue: _selectedsex,
+              onChanged: (value) {
+                setState(() {
+                  _selectedsex = value.toString();
+                });
+              },
+            ),
+            Text(
+              'Male',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Radio(
+              value: 'F',
+              groupValue: _selectedsex,
+              onChanged: (value) {
+                setState(() {
+                  _selectedsex = value.toString();
+                });
+              },
+            ),
+            Text(
+              'Female',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Radio(
+              value: 'O',
+              groupValue: _selectedsex,
+              onChanged: (value) {
+                setState(() {
+                  _selectedsex = value.toString();
+                });
+              },
+            ),
+            Text(
+              'Others',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _build6TextField() {
+    return Column(
+      children: [
+        Padding(padding: EdgeInsets.all(4)),
+        Container(
+          padding: EdgeInsets.all(3),
+          alignment: Alignment.topLeft,
+          width: 290.0,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Color(0xffcde2f5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextFormField(
+            controller: _weightController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter weight';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              labelText: 'Weight (kg)',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+              floatingLabelAlignment: FloatingLabelAlignment.start,
+            ),
+            style: TextStyle(color: Colors.grey, fontSize: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField(
       TextEditingController controller, String labelText, String label) {
     return Column(
       children: [
-        Padding(padding: EdgeInsets.all(8)),
+        Padding(padding: EdgeInsets.all(4)),
         Container(
-          padding: EdgeInsets.only(left: 3),
+          padding: EdgeInsets.all(3),
           alignment: Alignment.topLeft,
           width: 290.0,
-          height: 34,
+          height: 42,
           decoration: BoxDecoration(
             color: Color(0xffcde2f5),
             borderRadius: BorderRadius.circular(8),
@@ -389,7 +598,7 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
                 focusedBorder: InputBorder.none,
                 labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
                 floatingLabelAlignment: FloatingLabelAlignment.start),
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: Colors.grey, fontSize: 10),
           ),
         ),
       ],
@@ -400,12 +609,12 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
       TextEditingController controller, String labelText, String label) {
     return Column(
       children: [
-        Padding(padding: EdgeInsets.all(8)),
+        Padding(padding: EdgeInsets.all(4)),
         Container(
           padding: EdgeInsets.all(3),
           alignment: Alignment.topLeft,
           width: 290.0,
-          height: 114,
+          height: 120,
           decoration: BoxDecoration(
             color: Color(0xffcde2f5),
             borderRadius: BorderRadius.circular(8),
@@ -419,61 +628,56 @@ class _Postpatient_ContainerState extends State<Postpatient_Container> {
                 focusedBorder: InputBorder.none,
                 labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
                 floatingLabelAlignment: FloatingLabelAlignment.start),
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: Colors.grey, fontSize: 10),
           ),
         ),
       ],
     );
   }
 
-  Widget _build3TextField(
+  Widget _build4TextField(
       TextEditingController controller, String labelText, String label) {
     return Column(
       children: [
-        Padding(padding: EdgeInsets.all(8)),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(padding: EdgeInsets.all(8)),
-            Container(
-              padding: EdgeInsets.all(3),
-              alignment: Alignment.topLeft,
-              width: 290.0,
-              height: 34,
-              decoration: BoxDecoration(
-                  color: Color(0xffcde2f5),
-                  borderRadius: BorderRadius.circular(8)),
-              child: TextField(
-                scrollPadding: EdgeInsets.all(5),
-                decoration: InputDecoration(
-                    hintText: 'Enter Mobile number',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                    floatingLabelAlignment: FloatingLabelAlignment.start),
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
+        Padding(padding: EdgeInsets.all(4)),
+        Container(
+          padding: EdgeInsets.all(3),
+          alignment: Alignment.topLeft,
+          width: 290.0,
+          height: 42,
+          decoration: BoxDecoration(
+            color: Color(0xffcde2f5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextFormField(
+            controller: controller,
+            readOnly: label == 'Date of Birth' || label == 'Age',
+            onTap: label == 'Date of Birth'
+                ? () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                    );
+                    if (pickedDate != null) {
+                      String formattedDate =
+                          DateFormat('yyyy-MM-dd').format(pickedDate);
+                      controller.text = formattedDate;
+                      _calculateAndSetAge();
+                    }
+                  }
+                : null,
+            decoration: InputDecoration(
+              labelText: label,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              labelStyle: TextStyle(color: Colors.grey, fontSize: 12),
+              floatingLabelAlignment: FloatingLabelAlignment.start,
             ),
-            Padding(padding: EdgeInsets.all(3)),
-            Container(
-              alignment: Alignment.centerRight,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Color(0xff4268b0)),
-              width: 60,
-              height: 32,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, 'phone/');
-                },
-                child: Text(
-                  'Verify',
-                  style: TextStyle(fontSize: 12, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
+            style: TextStyle(color: Colors.grey, fontSize: 10),
+          ),
         ),
       ],
     );

@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 
 class DoctorService {
-  final String apiUrl = "http://51.20.3.117/doctors/";
+  final String apiUrl = "http://51.20.3.117/api/users/doctor/";
   // final String apiUrl = "http://10.0.2.2:8000/doctors/";
 
   Future<List<Doctor>> fetchDoctors() async {
@@ -13,14 +13,17 @@ class DoctorService {
     if (response.statusCode == 200) {
       List<dynamic> body = json.decode(response.body);
       List<Doctor> doctors = body.map((dynamic item) => Doctor.fromJson(item)).toList();
+      print(doctors[0].profilePhotoUrl);
+      print(doctors);
       return doctors;
+
     } else {
       throw "Failed to load doctors";
     }
   }
-
+  final String apiUrlreview = "http://51.20.3.117/api/reviews/review/";
   Future<List<Review>> fetchReviews(String doctorId) async {
-    final response = await http.get(Uri.parse('${apiUrl}doctor_reviews/$doctorId/'));
+    final response = await http.get(Uri.parse('${apiUrlreview}doctor_reviews/$doctorId/')); //in urls.py for reviews doctor_reviews/<uuid:doctor_id>/
     if (response.statusCode == 200) {
       List<dynamic> body = json.decode(response.body);
       return body.map((dynamic item) => Review.fromJson(item)).toList();
@@ -31,7 +34,7 @@ class DoctorService {
 
   Future<bool> submitReview(String doctorId, String patientId, String reviewText, int rating) async {
     final response = await http.post(
-      Uri.parse("http://51.20.3.117/submit_review/"),
+      Uri.parse("http://51.20.3.117/api/reviews/review/"),
       // Uri.parse("http://10.0.2.2:8000/submit_review/"),
       headers: {"Content-Type": "application/json"},
 
@@ -50,9 +53,9 @@ class DoctorService {
       throw Exception('Failed to submit review');
     }
   }
-
+  final String apiUrldoctor = "http://51.20.3.117/api/users/doctor/";
 Future<Doctor> fetchDoctorById(String id) async {
-  final response = await http.get(Uri.parse('$apiUrl$id/'));
+  final response = await http.get(Uri.parse('$apiUrldoctor$id/'));
   if (response.statusCode == 200) {
     Map<String, dynamic> jsonData = json.decode(response.body);
     return Doctor.fromJson(jsonData); // Pass only the JSON data

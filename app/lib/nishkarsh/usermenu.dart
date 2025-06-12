@@ -1,11 +1,19 @@
 // import 'package:cognix_chest_xray/Nishkarsh/profileheader.dart';
+import 'package:check/saumya/user_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class MenuDrawer extends StatelessWidget {
   const MenuDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    
+    final userProvider = Provider.of<UserProvider>(context);
+    
+    // Accessing user data from UserProvider
+    final user = userProvider.user;
+
     return Drawer(
       child: Column(
         children: [
@@ -18,11 +26,14 @@ class MenuDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _buildMenuItem(Icons.person, 'Profile', context, onTap: () {
-                  Navigator.pushNamed(context, 'patient_profile/');
+                  if(user!.occupation == "Doc") Navigator.pushNamed(context, 'post_doctor/'); //riya ka doctor wala screen
+                  else{
+                    Navigator.pushNamed(context, 'patient_profile/');
+                  }
                 }),
-                _buildMenuItem(Icons.notifications, 'Chat', context, onTap: () {
-                  Navigator.pushNamed(context, 'dummy-screen/');
-                }),
+                // _buildMenuItem(Icons.notifications, 'Chat', context, onTap: () {
+                //   Navigator.pushNamed(context, 'dummy-screen/');
+                // }),
                 _buildMenuItem(Icons.settings, 'App Settings', context,
                     onTap: () {
                   Navigator.pushNamed(context, 'dummy-screen/');

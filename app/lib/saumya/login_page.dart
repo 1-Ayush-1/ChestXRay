@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:check/saumya/user_provider.dart';
+import 'package:check/tanish/patient_search.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -22,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   Future<void> _login(BuildContext context) async {
-    String url = 'http://51.20.3.117/auth/login/'; // Replace with your backend URL
+    String url = 'http://51.20.3.117/api/auth/login/'; // Replace with your backend URL
 
     try {
       final response = await http.post(
@@ -51,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
           } 
           else {
             if (user.occupation == "Doc") {
-               Navigator.pushNamed(context, 'patient_search_screen/');
+                Navigator.push(context, MaterialPageRoute(builder: (context) => PatientSearchScreen(token : user.token,),),);
            } else {
             Navigator.pushNamed(context, 'patient_menu/');
            }

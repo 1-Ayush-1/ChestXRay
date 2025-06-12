@@ -11,11 +11,12 @@ class User {
   String? profilePhoto;
   String? occupation;
   String? about;
-  String? qualification;
+  String? description;
   int? authUser;
   String? medication;
   num? weight;
   num? height;
+  num? age;
 
   User(
       {this.staticId,
@@ -28,7 +29,8 @@ class User {
       this.address,
       this.pincode,
       this.about,
-      this.qualification,
+      this.age,
+      this.description,
       this.profilePhoto,
       this.occupation,
       this.authUser,
@@ -36,48 +38,6 @@ class User {
       this.weight,
       this.height});
 
-//   User.fromJson(Map<String, dynamic> json) {
-//     staticId = json['static_id'];
-//     username = json['username'];
-//     name = json['name'];
-//     email = json['email'];
-//     mobileNum = json['mobile_num'];
-//     dob = json['dob'];
-//     sex = json['sex'];
-//     about = json['about'];
-//     qualification = json['qualification'];
-//     address = json['address'];
-//     pincode = json['pincode'];
-//     profilePhoto = json['profile_photo'];
-//     occupation = json['occupation'];
-//     authUser = json['auth_user'];
-//     medication = json['medication'];
-//     weight = json['weight'];
-//     height = json['height'];
-//   }
-
-//   Map<String, dynamic> toJson() {
-//     final Map<String, dynamic> data = new Map<String, dynamic>();
-//     data['static_id'] = this.staticId;
-//     data['username'] = this.username;
-//     data['name'] = this.name;
-//     data['email'] = this.email;
-//     data['mobile_num'] = this.mobileNum;
-//     data['dob'] = this.dob;
-//     data['sex'] = this.sex;
-//     data['address'] = this.address;
-//     data['pincode'] = this.pincode;
-//     data['profile_photo'] = this.profilePhoto;
-//     data['occupation'] = this.occupation;
-//     data['auth_user'] = this.authUser;
-//     data['medication'] = this.medication;
-//     data['weight'] = this.weight;
-//     data['height'] = this.height;
-//     data['about'] = this.about;
-//     data['qualification'] = this.qualification;
-//     return data;
-//   }
-// }
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       staticId: json['staticId'],
@@ -90,11 +50,17 @@ class User {
       weight: json['weight'],
       height: json['height'],
       address: json['address'],
+      about: json['about'],
+      description: json['description'],
       pincode: json['pincode'],
+      sex: json['sex'],
+      age: json['age'],
+      
     );
   }
 
   Map<String, dynamic> toJson() {
+    if (mobileNum != null)
     return {
       'staticId': staticId,
       'profilePhoto': profilePhoto,
@@ -103,10 +69,31 @@ class User {
       'mobile_num': mobileNum,
       'dob': dob,
       'medication': medication,
+      'description': description,
+      'about': about,
       'weight': weight,
       'height': height,
       'address': address,
       'pincode': pincode,
+      'sex': sex,
+      'age': age,
+    };
+    else 
+    return{
+      'staicId': staticId,
+      'profilePhoto': profilePhoto,
+      'name': name,
+      'email': email,
+      'dob': dob,
+      'medication': medication,
+      'weight': weight,
+      'height': height,
+      'address': address,
+      'age': age,
+      'pincode': pincode,
+      'sex': sex,
+      'description': description,
+      'about': about,
     };
   }
 }

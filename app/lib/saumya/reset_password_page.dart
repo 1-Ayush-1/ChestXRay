@@ -29,7 +29,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Future<void> verifyOtp() async {
-    String url = 'http://51.20.3.117/auth/reset-password/';
+    String url = 'http://51.20.3.117/api/auth/reset-password/';
     String otp = otpControllers.map((controller) => controller.text).join();
     String pswd = newPasswordController.text.trim();
 
